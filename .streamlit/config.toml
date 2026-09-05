@@ -1,0 +1,18 @@
+# LocalMind - Streamlit tema ayarları
+#
+# Koyu tema temel alınıyor. app.py içindeki CSS bu renklerin üzerine
+# kuruluyor, o yüzden ikisi birbiriyle uyumlu olmalı.
+
+[theme]
+base = "dark"
+primaryColor = "#6366f1"
+backgroundColor = "#0b0e14"
+secondaryBackgroundColor = "#141922"
+textColor = "#e6edf3"
+font = "sans serif"
+
+[server]
+headless = false
+
+[browser]
+gatherUsageStats = false

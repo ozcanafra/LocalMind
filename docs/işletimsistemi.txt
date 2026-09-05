@@ -1,0 +1,263 @@
+1) Temel Kavramlar
+İşletim sistemlerinin en önemli özelliklerinden biri birden çok programı aynı anda
+çalıştırabilmeleridir. Bu, multiprogramming ve multitasking kavramlarını doğurur.
+TANIM
+Multiprogramming: Birden fazla programın aynı anda bellekte tutulmasıdır. CPU boşa kalmasın diye I/O
+bekleyen process'in yerini başka bir process alır.
+TANIM
+Multitasking: Multiprogramming'in genişletilmiş halidir; CPU process'ler arasında sık sık geçiş yaparak
+hem CPU verimliliğini hem kullanıcıya yanıt verebilirliği artırır.
+Birden fazla process aynı anda çalışmaya hazırsa işletim sistemi hangisinin çalışacağını seçmek
+zorundadır. Bu karar CPU Scheduling ile verilir.
+2) CPU Burst Cycle ve I/O Burst Cycle
+Hemen hemen tüm process'lerin yürütmesi CPU execution ve I/O wait arasında dönüp duran bir
+döngü şeklindedir.
+TANIM
+CPU Burst: Process'in, I/O beklemeden veya interrupt olmadan CPU'yu kullandığı süredir.
+TANIM
+I/O Burst: Process'in CPU zamanına ihtiyaç duymadan I/O için beklediği süredir.
+CPU burst süresinin dağılımı genellikle exponential / hyperexponential karakterdedir: çok sayıda
+kısa burst, az sayıda uzun burst. Yani process'ler CPU'yu kısa aralıklarla kullanır.
+SINAVDA ÇIKAR
+CPU burst dağılımının şekli: çok kısa burst yüksek frekans, uzun burst düşük frekans. Bu bilgi soru
+olarak gelebilir.
+3) CPU Scheduler ve Dispatcher
+TANIM
+CPU Scheduler (Short-term Scheduler): CPU her boşta kaldığında ready queue'dan bir process seçip
+CPU'ya geçiren mekanizmadır.
+Ready queue; FIFO, priority queue, ağaç veya sırasız bağlı liste şeklinde olabilir. Kuyruk içindeki
+kayıtlarda PCB (Process Control Block) tutulur.
+TANIM
+Dispatcher: Short-term scheduler'ın seçtiği process'i CPU'ya geçiren modüldür. İşlevleri: context
+switching, kullanıcı moduna geçiş, programı kaldığı yerden devam ettirme.
+TANIM
+Dispatch Latency: Dispatcher'ın bir process'i durdurup diğerini başlatana kadar geçen süredir.
+Mümkün olduğunca kısa olmalıdır.
+4) Preemptive vs Nonpreemptive Scheduling
+CPU scheduling kararı 4 durumda verilir:
+# Durum Tür
+1 Running → Waiting (örn. I/O isteği) Nonpreemptive
+2 Running → Ready (örn. interrupt) Preemptive
+3 Waiting → Ready (I/O tamamlandı) Preemptive
+4 Process sonlandı Nonpreemptive
+EZBER
+Durum 1 ve 4 → Nonpreemptive · Durum 2 ve 3 → Preemptive
+DİKKAT
+Preemptive scheduling'de paylaşılan veri üzerinde race condition oluşabilir; mutex locks gibi
+mekanizmalar gerekir. Windows, macOS, Linux ve UNIX modern preemptive algoritmaları kullanır.
+5) Scheduling Kriterleri
+CPU scheduling algoritmaları aşağıdaki kriterlere göre karşılaştırılır:
+Kriter Tanım Hedef
+CPU Utilization CPU'nun kullanımda olma oranı (gerçek sistemlerde %40–%90)Maksimum
+Throughput Birim zamanda tamamlanan process sayısı Maksimum
+Turnaround Time Process'in sisteme sunulmasından tamamlanmasına kadar geçen süre (bekleme + CPU + I/O) Minimum
+Waiting Time Process'in ready queue'da beklediği toplam süre Minimum
+Response Time İlk istekten ilk yanıta kadar geçen süre (cevabın tamamı değil)Minimum
+EZBER
+CPU Utilization + Throughput → Maksimum · Turnaround + Waiting + Response → Minimum
+6) First-Come, First-Served (FCFS) Scheduling
+TANIM
+CPU'ya ilk istek yapan process CPU'ya ilk geçer. FIFO kuyruk yapısıyla yönetilir.
+Özellikleri:
+• En basit scheduling algoritmasıdır.
+• Nonpreemptive'dir: process CPU'yu sonlanana ya da I/O yapana kadar bırakmaz.
+• Ortalama waiting time genellikle yüksektir.
+• Convoy effect: Kısa process'ler uzun bir process'in bitmesini bekler.
+• Interaktif sistemler için uygun değildir.
+SINAVDA ÇIKAR
+FCFS örnek: P1=24ms, P2=3ms, P3=3ms → P1,P2,P3 sırasıyla gelirse ort. waiting time = (0+24+27)/3
+= 17 ms · P2,P3,P1 sırasıyla gelirse = (0+3+6)/3 = 3 ms. Sıra çok önemli!
+7) Shortest-Job-First (SJF) Scheduling
+TANIM
+CPU'ya bir sonraki CPU burst süresi en kısa olan process atanır (shortest-next-CPU-burst).
+Özellikleri:
+• Minimum ortalama waiting time'ı garanti eder (optimal).
+• Preemptive veya nonpreemptive olabilir.
+• Preemptive SJF = Shortest-Remaining-Time-First (SRTF): yeni gelen process'in burst süresi
+mevcut process'in kalan süresinden kısaysa, mevcut process preempted olur.
+• Short-term scheduling'de uygulamanın en büyük zorluğu: bir sonraki burst süresini bilmek
+mümkün değildir, tahmin edilmesi gerekir.
+EZBER
+Sonraki burst tahmini formülü: τ(n+1) = α · t(n) + (1−α) · τ(n) t(n) = n. CPU burst süresi (gerçek) ·
+τ(n) = önceki tahmin · α genellikle ½ · t(n) en son bilgiyi, τ(n) tüm geçmiş bilgiyi içerir.
+SINAVDA ÇIKAR
+SJF örnek (nonpreemptive): P1=6, P2=8, P3=7, P4=3 → Gantt: P4(0-3), P1(3-9), P3(9-16), P2(16-24) →
+Ort. waiting = (0+3+9+16)/4 = 7 ms. FCFS olsaydı 10.25 ms olurdu.
+SINAVDA ÇIKAR
+SRTF örnek: P1(arr=0,burst=8), P2(arr=1,burst=4), P3(arr=2,burst=9), P4(arr=3,burst=5) → Gantt:
+P1(0-1), P2(1-5), P4(5-10), P1(10-17), P3(17-26) → Ort. waiting = [(10-1)+(1-1)+(17-2)+(5-3)]/4 = 6.5
+ms
+8) Priority Scheduling
+TANIM
+Her process'e bir öncelik sayısı atanır. CPU en yüksek önceliğe sahip process'e tahsis edilir. Eşit
+öncelikte olanlar FCFS sırasıyla atanır.
+Özellikleri:
+• SJF aslında önceliğin 1/burst_time olduğu bir priority scheduling'dir.
+• Preemptive veya nonpreemptive olabilir.
+• Preemptive: daha yüksek öncelikli process gelince çalışan process CPU'yu bırakır.
+• Nonpreemptive: çalışan process durum değiştirene kadar CPU'da kalır.
+• Starvation (indefinite blocking): Düşük öncelikli process'ler hiç çalışamayabilir.
+• Aging: Starvation çözümü; bekleme süresi arttıkça öncelik de artırılır (örn. her 15 dk'da +1).
+SINAVDA ÇIKAR
+Priority örnek: P1(burst=10,prio=3), P2(1,1), P3(2,4), P4(1,5), P5(5,2) → küçük sayı yüksek öncelik →
+Gantt: P2(0-1), P5(1-6), P1(6-16), P3(16-18), P4(18-19) → Ort. waiting = (1+6+16+18)/5 = 8.2 ms (P2
+için 0)
+9) Round-Robin (RR) Scheduling
+TANIM
+Process'ler sabit bir zaman dilimi (time quantum, q) kadar CPU'ya dairesel sırayla atanır. FCFS'ye
+benzer ama preemption eklenmiştir. Genellikle time-sharing sistemlerde kullanılır.
+Çalışma mantığı:
+• Ready queue dairesel FIFO kuyruğu şeklinde tutulur.
+• Burst süresi q'dan kısaysa process q dolmadan CPU'yu bırakır.
+• Burst süresi q'dan büyükse q kadar çalışır, sonra context switch ile kuyruğun sonuna gider.
+• n process ile q time quantum'da bir process için en fazla waiting time = (n−1)×q
+EZBER
+q büyük olursa → FCFS gibi davranır q çok küçük olursa → çok fazla context switch, CPU verimsizleşir
+Temel kural: CPU burst'lerinin %80'i q'dan kısa olmalı
+SINAVDA ÇIKAR
+RR örnek (q=4): P1=24ms, P2=3ms, P3=3ms → Gantt:
+P1(0-4),P2(4-7),P3(7-10),P1(10-14),P1(14-18),P1(18-22),P1(22-26),P1(26-30) → Waiting: P1=10-4=6,
+P2=4, P3=7 → Ort. waiting = 17/3 = 5.66 ms
+DİKKAT
+Turnaround time ile time quantum büyüklüğü doğrusal değildir! q arttıkça turnaround mutlaka
+iyileşmez. Context switch maliyeti q'nun ~%10'u olmamalıdır.
+10) Multilevel Queue Scheduling
+TANIM
+Ready queue birden fazla alt kuyruğa bölünür. Process'ler özelliklerine göre (tür, öncelik, boyut…) bir
+kuyruğa sabit olarak atanır. Her kuyruğun kendi scheduling algoritması vardır.
+Kuyruklar arasında scheduling:
+• Genellikle preemptive priority: yüksek öncelikli kuyruk boşalmadan düşük öncelikli kuyruğa
+geçilmez (starvation riski!).
+• Alternatif: her kuyruğa belirli CPU zamanı (time slice) ayrılır. Örn. foreground %80 RR,
+background %20 FCFS.
+EZBER
+Klasik kuyruk sırası (yüksekten düşüğe): System Processes → Interactive Processes → Interactive
+Editing → Batch Processes → Student Processes
+11) Multilevel Feedback Queue Scheduling
+TANIM
+Process'lerin kuyruklar arasında geçiş yapabildiği gelişmiş versiyondur. I/O-bound ve interaktif
+process'ler üst kuyruğa, CPU-bound process'ler alt kuyruğa itilir. Starvation için aging uygulanabilir.
+Çalışma mantığı:
+• Hazır kuyruğuna gelen her process önce en yüksek öncelikli kuyruğa alınır.
+• q süresinde bitmezse alt kuyruğa indirilir (demotion).
+• Alt kuyrukta çok uzun bekleyen process üst kuyruğa çekilir (promotion/aging).
+SINAVDA ÇIKAR
+Klasik MLFQ örneği: Q0 – RR(q=8ms), Q1 – RR(q=16ms), Q2 – FCFS. Q0 boşalınca Q1'e geçilir. Q1'e
+yeni process gelirse Q2'deki preempted olur.
+DİKKAT
+MLFQ scheduler 5 parametre ile tanımlanır: (1) Kuyruk sayısı, (2) Her kuyruk için algoritma, (3)
+Yükseltme kriteri, (4) İndirme kriteri, (5) Process'in hangi kuyruğa gireceği.
+12) Algoritma Karşılaştırma Tablosu
+Algoritma Preemptive? Avantaj Dezavantaj
+FCFS Hayır Basit Convoy effect, yüksek waiting time
+SJF Hayır Min. ort. waiting time Burst süresini tahmin etmek zor
+SRTF Evet Optimal waiting time Uzun process'e starvation
+Priority İkisi de olabilir Öneme göre sıralama Starvation (aging ile çözülür)
+Round Robin Evet Adil, iyi response time Yüksek context switch, uzun turnaround
+Multilevel Q. Genelde evet Gruplar ayrı yönetilir Starvation riski
+MLFQ Evet Esnek, starvation önlenebilir Karmaşık parametre ayarı
+13) Thread Scheduling
+TANIM
+Thread'ler kullanıcı seviyesinde (user thread) veya çekirdek seviyesinde (kernel thread) yönetilebilir.
+Modern sistemlerin çoğu kernel thread ile çalışır.
+İki seviye:
+• PCS (Process Contention Scope): User thread'ler aynı process içindeki kernel thread'lere eşlenir.
+Thread kütüphanesi yönetir.
+• SCS (System Contention Scope): Kernel thread'ler sistem genelinde diğer tüm thread'lerle CPU
+için rekabet eder.
+EZBER
+Linux ve Windows sadece SCS kullanır (one-to-one model). Kernel her thread'i bağımsız olarak
+schedule eder.
+14) Multiple-Processor Scheduling
+Birden fazla CPU (veya çekirdek) olduğunda scheduling daha karmaşık hale gelir. Temel
+yaklaşımlar:
+TANIM
+Asymmetric Multiprocessing: Tüm scheduling kararları tek bir master CPU tarafından verilir. Basit ama
+darboğaz yaratabilir.
+TANIM
+Symmetric Multiprocessing (SMP): Her CPU kendi kendini schedule eder. Modern sistemlerin standart
+yaklaşımı. Tüm process'ler ortak ready queue'da veya her CPU'nun kendi queue'sunda tutulur.
+Önemli kavramlar:
+• Processor Affinity: Process'in çalıştığı CPU'nun önbelleğinde verisi bulunur. Farklı CPU'ya
+taşımak bu cache'i geçersiz kılar (soğuk önbellek). Soft affinity: tercih eder, garanti vermez.
+Hard affinity: zorunlu kılar.
+• Load Balancing: CPU'lar arasındaki iş yükünü dengeleme. Push migration (yüklü CPU'dan boş
+CPU'ya iter) ve pull migration (boş CPU yüklüden çeker) yöntemleri vardır.
+• NUMA (Non-Uniform Memory Access): Farklı CPU'ların farklı bellek bölgelerine erişim hızı
+farklıdır. NUMA-aware scheduler, process'leri kendi bellek bölgesinin CPU'suna atar.
+DİKKAT
+Load balancing ile processor affinity birbiriyle çelişebilir. Affinity için process aynı CPU'da kalmalı ama
+load balance için taşınmalı. İşletim sistemi bu tradeoff'u yönetir.
+15) Gerçek Zamanlı (Real-Time) CPU Scheduling
+Gerçek zamanlı sistemlerde işler belirli son tarihler (deadline) içinde tamamlanmak zorundadır.
+TANIM
+Soft Real-Time: Kritik process'ler diğerlerinden önce çalıştırılır ama deadline garantisi yoktur.
+TANIM
+Hard Real-Time: Görevlerin kesinlikle deadline içinde tamamlanması zorunludur. Gecikme kabul
+edilemez.
+Önemli kavramlar:
+• Latency türleri: Interrupt latency (interrupt'dan ISR'ye kadar geçen süre) ve Dispatch latency
+(scheduler'ın bir process'i durdurmasından diğerini başlatmasına kadar geçen süre).
+• Priority-based Scheduling: En yüksek öncelikli gerçek zamanlı process her zaman önce çalışır.
+Rate-Monotonic Scheduling:
+• Tekrarlayan (periodic) process'ler için kullanılır. Her process sabit bir periyotta tekrarlar.
+• Kural: Periyodu daha kısa olan process daha yüksek öncelik alır.
+• Statik önceliktir, değişmez. Optimal statik öncelik atamasıdır.
+SINAVDA ÇIKAR
+Rate-monotonic: kısa periyot = yüksek öncelik. Örneğin P1 periyodu 50ms, P2 periyodu 100ms ise P1
+her zaman P2'den önceliklidir.
+Earliest-Deadline-First (EDF) Scheduling:
+• Deadline'ı en yakın olan process en yüksek önceliği alır.
+• Öncelik dinamiktir; process'lerin deadline'larına göre sürekli değişir.
+• Teorik olarak işlemciyi %100'e kadar kullanabilir (utilization = 1).
+• Rate-monotonic'e göre daha optimal utilization sağlar.
+EZBER
+EDF vs Rate-Monotonic: EDF dinamik öncelik, daha yüksek utilization · Rate-Monotonic statik öncelik,
+uygulaması daha kolay. EDF daha esnektir.
+16) Sınav İçin Boşluk Doldurma Provası
+1. CPU her boşta kaldığında ready queue'dan process seçen mekanizmaya __________ denir.
+Cevap: CPU Scheduler / Short-term Scheduler
+2. Dispatcher'ın bir process'i durdurup diğerini başlatana kadar geçen süreye __________ denir.
+Cevap: dispatch latency
+3. Birden fazla process'in CPU boşalmadan işini bitirmesini beklediği duruma __________ denir.
+Cevap: convoy effect
+4.
+SJF algoritmasının kısa süreçlere starvation yaratan preemptive versiyonuna __________
+denir.
+Cevap: SRTF (Shortest-Remaining-Time-First)
+5.
+Düşük öncelikli process'lerin önceliğini zaman içinde artıran starvation çözümüne __________
+denir.
+Cevap: aging
+6.
+Round Robin'de n process ve q time quantum ile bir process için maksimum waiting time =
+__________.
+Cevap: (n-1) × q
+7.
+q büyük olursa RR, __________ algoritmasına benzer davranır.
+Cevap: FCFS
+8.
+MLFQ'da process kuyruğa ilk girdiğinde __________ öncelikli kuyruğa alınır.
+Cevap: en yüksek
+9.
+Bir CPU'ya bağlı kalmayı tercih eden ama garanti etmeyen affinity türüne __________ denir.
+Cevap: soft affinity
+10. Deadline'ı en yakın olan process'e en yüksek öncelik veren gerçek zamanlı algoritmaya
+__________ denir.
+Cevap: EDF (Earliest-Deadline-First)
+11. Rate-monotonic scheduling'de __________ periyotlu process daha yüksek öncelik alır.
+Cevap: kısa (küçük)
+12. Turnaround time = bekleme süresi + __________ + __________.
+Cevap: CPU yürütme süresi + I/O süresi
+17) Hızlı Özet – Sınav Öncesi Son Bakış
+FCFS: Basit, nonpreemptive, convoy effect, ort. waiting time yüksek
+SJF: Minimum ort. waiting time, burst tahmin zorluğu, nonpreemptive versiyonu
+SRTF: SJF'nin preemptive versiyonu, geriye kalan süreye bakılır
+Priority: Yüksek önceliğe CPU, starvation + aging çözüm
+Round Robin: Time quantum q, adil, interaktif sistemlerde iyi
+Multilevel Q: Sabit kuyruk ataması, her kuyruk kendi algoritması
+MLFQ: Kuyruklar arası geçiş, en esnek, en karmaşık
+Rate-Monotonic: Statik öncelik, kısa periyot = yüksek öncelik, periodic RT
+EDF: Dinamik öncelik, yakın deadline = yüksek öncelik, optimal utilization
+SINAVDA ÇIKAR
+Gantt şeması + waiting/turnaround time hesabı her algoritmadan gelebilir. FCFS, SJF, SRTF, Priority v

@@ -1,0 +1,186 @@
+1. AĞ KATMANI NEDİR?
+TANIM
+Farklı ağlardaki (farklı broadcast domain) iki bilgisayar arasında paket bazında
+haberleşmeyi sağlar. Paketi göndericiden alıcıya en uygun düğümlerden
+geçirerek yönlendirir.
+Ağ Katmanının Görevleri
+• Adresleme (Mantıksal adresleme)
+• Ağlar arası yönlendirme
+• Tıkanma kontrolü
+• Mantıksal adreslerden Fiziksel adreslere dönüşüm
+• Yönlendirici cihazlar arasındaki mesaj aktarımı
+• Kullanıcı paketlerinin hedefe teslimi
+SINAVDA
+ÇIKAR Bu katmanda çalışan temel protokoller: IP (TCP/IP'nin IP kısmı) ve Novell IPX
+Ağ Katmanı İşlevleri (Sınav Tablosu)
+İşlev Alt Türleri
+1. Adresleme a) Mantıksal  b) Servis (Ağ+MAC+SAP)
+2. Yol Belirleme a) Distance Vector  b) Link-State
+3. Yol Seçimi a) Statik  b) Dinamik
+4. Anahtarlama a) Devre  b) Mesaj  c) Paket
+5. Bağlantı Servisleri a) Akış kontrolü  b) Hata kontrolü  c) Paket sıralama
+2. IP PROTOKOLÜ VE DATAGRAM YAPISI
+TANIM
+IP (Internet Protocol); farklı ağ türlerini saydam olarak birbirine bağlar. Verinin
+hedefe hangi yolla gittiğiyle ilgilenir. Güvenli akış, akış kontrolü veya sıralama
+garantisi vermez.
+EZBER IP'nin iki temel görevi: Adresleme ve Yönlendirme
+IP Datagram Alanları (Boşluk Doldurma için Kritik)
+Alan Boyut Açıklama
+Version 4 bit IP türü: IPv4=4, IPv6=6
+IHL 4 bit Başlık uzunluğu: min 20, max 60 oktet
+ToS (Hizmet Türü) 8 bit Öncelik, gecikme, güvenilirlik bilgisi
+Toplam Uzunluk 16 bit Başlık + veri: min 576, max 65535 oktet
+Datagram Kimliği 16 bit Verinin tanınması için: 0–65535
+Fragment Bayrakları 3+13 bit Parçalama ve yeniden birleştirme bilgisi
+TTL 8 bit Datagramın ağda kalabileceği süre (saniye cinsinden)
+Protokol 8 bit Üst katman protokolü: TCP=6, UDP=17
+Header Checksum 16 bit Başlığın doğruluğunu denetler
+Kaynak IP 32 bit Gönderici IP adresi
+Hedef IP 32 bit Alıcı IP adresi
+Options Değişken Opsiyonel; nadiren kullanılır
+Doldurma Biti Değişken Başlık uzunluğunu korumak için eklenen sıfırlar
+DİKKAT TTL, IHL, ToS, Fragment alanları sınavda tanım veya değer sorusu olarak çok
+gelir!
+3. ANAHTARLAMA TEKNİKLERİ
+TANIM Verinin kaynak noktasından hedef noktasına, yönlendirici (anahtar) cihazlar
+üzerinden aktarılma yöntemidir.
+Tür Temel Mantık Avantaj (+) Dezavantaj (−)
+Devre
+Anahtarlama İki uç arasında kalıcı fiziksel yol kurulur. Tüm veri bu yoldan geçer. Sabit hız, gecikme yok
+Gerçek zamanlı uygulamalar için ideal (telefon)
+Kanal sadece bu bağlantıya ayrılır
+Verimsiz kullanım, pahalı, uzun kurulum süresi
+Mesaj
+Anahtarlama Mesaj tüm düğümlerde sakla-ve-gönder (store-and-forward) ile iletilir. Birden fazla kullanıcı aynı kanalı paylaşır
+Öncelik tanınabilir
+Gerçek zamanlı değil
+Büyük buffer gerekir, uzun erişim gecikmesi
+Paket
+Anahtarlama Veri küçük paketlere bölünür; her paket ayrı yönlendirilebilir. Kaynaklar verimli paylaşılır
+Hata toleransı yüksek (alternatif yol)
+Gerçek zamanlı uygulamalar için ideal değil
+Paketler sırasız gelebilir
+Paket Anahtarlama Alt Türleri
+Tür Açıklama Özellik
+Datagram
+(Bağlantısız) Önceden yol kurulmaz. Her paket o anki ağ durumuna göre bağımsız yönlendirilir. Paketler farklı yol izleyebilir → varışta sıralama gerekir. Arızada alternatif yol kullanılabilir.
+Sanal Devre
+(Bağlantılı) Bağlantı kurulurken yol belirlenir; tüm paketler aynı yolu izler. Paket başlıkları küçüktür (yol önceden belli). Sıra garantisi var. ATM, X.25 örnek.
+SINAVDA
+ÇIKAR "Datagram ile Sanal Devre farkı nedir?" — Bu karşılaştırma kesin gelir!
+Bağlantısız vs Bağlantılı Karşılaştırma Tablosu
+Özellik Bağlantısız (Datagram) Bağlantılı (Sanal Devre)
+Adres bilgisi Her pakette kaynak+hedef IPBağlantı paketinde; sonra görüntü devre no
+Paket teslim sırası Sırasız (yeniden sıralama gerekir) Gönderildiği sırада
+Hata denetimi Router'larda yok Var
+Akış denetimi Yok Var
+QoS pazarlığı Yok Var (bant genişliği önceden ayrılır)
+Yönlendirme Her paket o anki duruma göre Önceden kurulmuş yörünge izlenir
+Düğüm arızası O düğümdeki paketler kaybolur O düğümden geçen tüm devreler kopar
+Karmaşıklık Az Fazla
+4. YÖNLENDİRME (ROUTING)
+TANIM Bir düğümün, hedef mantıksal adresi belli olan paketi en uygun komşusuna
+geçirme mekanizmasıdır.
+Yönlendirme Tablolarının Oluşturulma Yöntemi
+Yöntem Açıklama Avantaj / Dezavantaj
+StatikTablo önceden algoritmayla oluşturulur, değişmez. + Basit, güncelleme gerektirmez
+− Tıkanmada veya hat kopmasında esnek değil; az ağ için uygun
+DinamikTrafik ve bağlantı değişimlerine göre tablo güncellenir. + Hata toleransı yüksek, alternatif yol
+− Daha karmaşık algoritmalar gerekir
+Paket Yönlendirme Yöntemleri
+Yöntem Açıklama
+Kaynakta Yönlendirme
+(Source Routing) Kaynak düğüm paketin geçeceği tüm düğümleri belirler ve pakete ekler. Diğer düğümler bu listeyi takip eder.
+Sekerek Yönlendirme
+(Hop-by-Hop) Her düğüm paketteki hedef adrese bakarak bir sonraki düğüme iletir. Yönlendirme tabloları kullanılır.
+5. YOL BELİRLEME ALGORİTMALARI
+EZBER 2 ana grup: Statik (Sabit) ve Dinamik (Uyarlanabilir) algoritmalar
+Grup Alt Algoritmalar
+Statik (Sabit)
+a) En Kısa Yol: Dijkstra, Bellman-Ford
+b) Taşkın (Flooding / Su Baskını)
+c) Rastgele Yönlendirme
+d) Akış Durumu Yönlendirme
+Dinamik (Uyarlanabilir) a) Uzaklık Vektörü (Distance Vector)
+b) Bağlantı Durumu (Link-State)
+Taşkın (Flooding) Algoritması
+TANIM Gelen paketin kopyası, geliş hattı dışındaki tüm hatlara gönderilir. Paket doğal
+olarak en kısa yoldan hedefe ulaşır, ama ağı aşırı yükler.
+DİKKAT Hop Counter (Atlama Sayacı): Sonsuz döngüyü önlemek için pakete eklenir. Her
+düğümde 1 azalır, sıfıra ulaşınca paket yok edilir.
+Rastgele Yönlendirme Algoritması
+TANIM Gelen paketin gönderileceği yol, geliş yolu dışındakiler arasından rastgele seçilir.
+Tüm yolların seçilme olasılığı eşittir. Ağ bilgisi kullanılmaz.
+6. DİNAMİK YÖNLENDİRME ALGORİTMALARI
+Distance Vector (Uzaklık Vektörü) Algoritması
+TANIM
+Her yönlendirici bir vektör tablosu tutar. Bu tabloda ağdaki her yönlendiriciye
+olan en iyi yol (gecikme/hop) ve hangi komşu üzerinden ulaşılacağı bilgisi
+saklanır.
+• Her T milisaniyede bir komşulara tablo gönderilir, komşulardan tablo alınır
+• Alınan bilgilerle kendi tablosu güncellenir
+• Metrik: gecikme, hop sayısı, bant genişliği olabilir
+• Gecikme ölçümü için ECHO paketi gönderilir
+• Kural: B→D için C üzerinden gecikme: (B-C gecikmesi) + (C'nin B'ye verdiği D gecikmesi)
+DİKKAT Dezavantajları: Sadece kuyruktaki gecikmeyi ölçer (hat kapasitesini dikkate
+almaz). Ağ topolojisi değişimlerine yavaş adapte olur (yakınsaklık uzun sürer).
+Link-State (Bağlantı Durumu) Algoritması
+TANIM
+Her yönlendirici, komşularına olan gecikme/maliyet bilgilerini içeren bağlantı
+durum paketlerini tüm ağa gönderir. Her düğüm tam topoloji bilgisine sahip olur
+ve Dijkstra algoritmasıyla en kısa yolu hesaplar.
+• HELLO paketi → komşuları öğrenir
+• ECHO paketi → komşulara olan gecikmeyi ölçer
+• Bağlantı durum tablosu oluşturulur → Flooding ile tüm ağa dağıtılır
+• Dijkstra algoritması çalıştırılarak en kısa yollar hesaplanır
+Özellik
+Bilgi Paylaşımı
+Topoloji Bilgisi
+Distance Vector
+Sadece komşulara
+Dolaylı (komşudan komşuya)
+Link-State
+Tüm ağa (Flooding)
+Tam topoloji bilgisi
+Metrik
+Yakınsaklık (Conv.)
+Algoritma
+Örnek Protokoller
+SINAVDA
+ÇIKAR
+Gecikme / Hop sayısı
+Yavaş
+Bellman-Ford benzeri
+RIP
+Gecikme + Bant genişliği
+Hızlı
+Dijkstra
+OSPF
+"Distance Vector ile Link-State farkı" — Karşılaştırma tablosunu ezberle!
+7. SINAVDA DOĞRUDAN GELEBİLECEKLER — BOŞLUK DOLDURMA
+SINAVDA
+ÇIKAR
+Aşağıdaki cümlelerin koyu kısımları birebir boşluk sorusu olabilir.
+• Ağ katmanı, farklı ağlardaki iki bilgisayar arasında paket bazında haberleşmeyi sağlar.
+• IP protokolünün iki temel görevi Adresleme ve Yönlendirme'dir.
+• IP datagramında TTL alanı, datagramın ağda ne kadar kalabileceğini belirtir.
+• Protokol alanında TCP için değer 6, UDP için 17'dir.
+• Datagramın alabileceği en büyük uzunluk 65535, en küçük uzunluk 576 oktettir.
+• IHL alanı başlık uzunluğunu tanımlar: en az 20, en fazla 60 oktet.
+• Devre anahtarlamada veri aktarımından önce fiziksel bir yol (devre) kurulur.
+• Mesaj anahtarlamada veri sakla-ve-gönder (store-and-forward) yöntemiyle iletilir.
+• Paket anahtarlama; devre ve mesaj anahtarlamanın avantajlarını birleştirir.
+• Datagram paket anahtarlamada paketler farklı yollar izleyebilir, varışta sıralama gerekir.
+• Sanal devre paket anahtarlamada paketler her zaman aynı yolu izler. Örnek: ATM, X.25.
+• Yönlendirme; bir düğümün paketi en uygun komşusuna geçirme mekanizmasıdır.
+• Statik yönlendirme tabloları önceden oluşturulur, ağ değişiminden etkilenmez.
+• Dinamik yönlendirme tablolarında trafik değişimlerine göre güncelleme yapılır.
+• Taşkın (Flooding) algoritmasında paket, geliş yolu dışındaki tüm hatlara gönderilir.
+• Sonsuz döngüyü önlemek için pakete Hop Counter (Atlama Sayacı) eklenir.
+• Distance Vector'da her yönlendirici tablosunu her T milisaniyede komşularına gönderir.
+• Link-State'de bağlantı durum paketleri Flooding ile tüm ağa dağıtılır.
+• Link-State'de en kısa yol hesaplamak için Dijkstra algoritması kullanılır.
+• Kaynakta yönlendirmede geçilecek düğüm listesini kaynak düğüm belirler.
+• Hop-by-hop yönlendirmede her düğüm yönlendirme tablosuna bakarak bir sonraki
+düğümü seçer.

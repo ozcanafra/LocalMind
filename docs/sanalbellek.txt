@@ -1,0 +1,288 @@
+Second-chance (Clock) Algoritması
+TANIM
+Second-chance algoritması, FIFO tabanlı bir page replacement algoritmasıdır. FIFO'ya göre
+seçilen page'e değiştirilmeden önce ikinci bir şans verir. Clock (saat) algoritması olarak da
+bilinir.
+Temel Çalışma Mantığı:
+• Değiştirilecek page seçilirken referans biti incelenir.
+• Referans biti = 0 → page değiştirilir.
+• Referans biti = 1 → page'e ikinci şans verilir; referans biti 0'a çekilir, varış zamanı sıfırlanır,
+sonraki page'e geçilir.
+• Uygulama için dairesel bir kuyruk (circular queue) kullanılır.
+• Pointer, referans biti 0 olan bir page bulana kadar ilerler ve ilerledikçe bitleri temizler.
+Önemli Özellikler:
+• Bellekte zaten olan bir page'e tekrar başvuru → referans biti 1 yapılır (ödül).
+• İkinci şansını kullanan page, diğer tüm page'ler değiştirilene kadar korunur.
+• Çok sık kullanılan bir page referans bitini korursa asla değiştirilmez.
+SINAVD
+A ÇIKAR
+Slayttaki örnek: Reference string = 0,4,1,4,2,4,3,4,2,4,0,4,1,4,2,2,3,1 — 3 frame ile toplam
+10 page hatası verir. Sınav sorusunda bu tür hesaplamaları adım adım yapabilmek gerekir.
+2. Enhanced Second-Chance Algoritması
+TANIM Referans biti ve değişiklik (modified/dirty) bitini birlikte kullanarak Second-chance'i geliştirir.
+I/O sayısını azaltmak için her iki biti birden dikkate alır.
+4 Sınıf (öncelik sırasıyla):
+Sınıf Referans
+Biti
+Değişiklik
+Biti
+Açıklama
+1 (En iyi) 0 0 Ne kullanılmış ne değiştirilmiş → değiştirilecek en iyi page
+2 0 1 Kullanılmamış ama değiştirilmiş → diske yazılması gerekir
+3 1 0 Kullanılmış, değiştirilmemiş → yakında tekrar kullanılabilir
+4 (En
+kötü)
+1 1 Hem kullanılmış hem değiştirilmiş → diske yazılacak ve tekrar
+kullanılacak
+EZBER En düşük sınıf değerine sahip ilk page değiştirilir. Sınıf 1 > Sınıf 2 > Sınıf 3 > Sınıf 4 sırasıyla
+tercih edilir.
+3. Counting-Based & Page-Buffering Algoritmaları
+Counting-Based Page Replacement:
+Algoritma Mantık Not
+LFU (Least
+Frequently Used)
+En az sayıda kullanılan page
+değiştirilir
+Aktif page büyük referans sayısına sahiptir
+MFU (Most
+Frequently Used)
+En çok kullanılan page değiştirilir En az kullanılan yeni getirilmiş olabilir
+DİKKAT LFU ve MFU'nun kullanımı yaygın değildir; uygulanması pahalıdır. Sınav için isim ve
+mantığını bilmek yeterli.
+Page-Buffering Algoritması:
+• Sistem, boş/müsait frame havuzu tutar.
+• Page hatası → kurban frame seçilir → istenen page, kurban yazılmadan önce boş frame'e
+yerleştirilir.
+• Process beklemeden devam edebilir; kurban sonra yazılır ve boş havuza eklenir.
+• Değiştirilmiş page listesi: Disk boştayken değiştirilmiş page'ler diske yazılır, dirty bit sıfırlanır
+→ gelecekte I/O tasarrufu.
+• Boş frame içerik kaydı: Frame'de hangi page'in olduğu bilinirse, page zaten oradaysa I/O
+gerekmez.
+4. Frame Tahsisi (Allocation of Frames)
+TANIM
+Her process'e kaç frame tahsis edileceğini belirleyen politikalar. Az frame → yüksek page
+hatası → yavaş yürütme. Minimum frame sayısı mimari tarafından, maksimum ise fiziksel
+bellek miktarıyla sınırlandırılır.
+1. Fixed Allocation (Sabit Tahsis):
+Yöntem Açıklama Formül
+Equal Allocation m frame, n process arasında eşit
+dağıtılır
+Her process: m/n frame
+Proportional
+Allocation
+Process boyutuna göre orantılı
+dağıtım
+aᵢ = (sᵢ/S) × m
+Örnek: m=62 frame, s₁=10, s₂=127 → S=137
+a₁ = (10/137) × 62 = 4 frame | a₂ = (127/137) × 62 = 57 frame
+2. Global vs. Local Replacement:
+Tür Açıklama Avantaj Dezavantaj
+Global
+Replacement
+Tüm frame'ler
+havuzundan seçim;
+başka process'ten frame
+alınabilir
+Yüksek sistem
+throughput'u; daha
+yaygın
+Process performansı dış koşullara bağlı;
+öngörülemeyen süre
+Local
+Replacement
+Her process yalnızca
+kendi frame'leri içinden
+seçer
+Process başına
+tutarlı performans
+Az kullanılan page'ler başkasına verilemiyor;
+bellek israfı
+SINAVD
+A ÇIKAR
+Global replacement daha yaygın kullanılır. Local replacement process başına tutarlı
+performans sağlar ama belleği verimsiz kullanabilir.
+3. Reclaiming Pages (Page'lerin Geri Alınması):
+• Boş frame listesi sıfıra düşmeden belirli bir eşik değerinde tutulur.
+• Eşiğin altına düşünce kernel page'leri geri almaya başlar → maksimum eşiğe ulaşana kadar
+devam eder.
+• Maksimum eşiğe ulaşınca reclaiming askıya alınır.
+4. NUMA (Non-Uniform Memory Access):
+• Birden fazla CPU'lu sistemlerde bazı bellek bölgelerine erişim daha hızlıdır.
+• Amaç: process'in çalıştığı CPU'ya mümkün olduğunca yakın frame tahsis etmek.
+• Solaris çözümü: lgroups (locality groups) — CPU ve belleği gecikme aralığına göre gruplar.
+5. Thrashing
+TANIM
+Bir process, komutlarını yürütmekten daha fazla zaman paging için harcıyorsa thrashing
+olmuştur. Page hatası oranı muazzam artar, EAT (Effective Access Time) yükselir, CPU
+kullanımı düşer.
+Thrashing Döngüsü (Cascade):
+• Process daha fazla frame'e ihtiyaç duyar → diğer process'lerden frame alır.
+• O process'ler de başkasından frame alır → herkes page hatası yapar.
+• Process'ler paging için sıraya girer → hazır kuyruk boşalır → CPU kullanımı düşer.
+• CPU scheduler azalan kullanımı görür → multiprogramming derecesini artırır → durum daha
+kötüleşir!
+EZBER
+Thrashing = process tüm zamanını paging'e harcıyordur, gerçek iş yapılmıyordur.
+Multiprogramming derecesi düşürülünce durur.
+Thrashing'i Önleme — Locality Model:
+• Process yürütülürken bir bölgeden diğerine hareket eder.
+• Bölge (locality): Birlikte aktif olarak kullanılan page kümesi.
+• Fonksiyon çağrılınca → yeni bölge tanımlar; çıkılınca → bölge terk edilir.
+• Thrashing'i önlemek için process'e o anki bölgesini tutacak kadar frame sağlanmalıdır.
+DİKKAT
+Pratikte en iyi çözüm: fiziksel bellek eklemek. Tüm working set'leri aynı anda bellekte
+tutacak kadar RAM → thrashing ve swapping önlenir.
+6. Working-Set Modeli
+TANIM
+Locality modeline dayanan bu model, Δ (delta) parametresiyle tanımlanan bir pencere
+içindeki en son page referanslarını izler. Bu penceredeki page kümesi working-set'tir.
+Temel Kavramlar:
+• Working-set window (Δ): İncelenen son Δ adet referans.
+• WSSᵢ: i. process'in working-set boyutu (ihtiyaç duyduğu frame sayısı).
+• D = Σ WSSᵢ: Toplam talep frame sayısı.
+• D > m (toplam fiziksel frame) → thrashing kaçınılmaz.
+Δ Seçiminin Önemi:
+Δ Değeri
+Çok küçük
+Sonuç
+Tüm bölgeyi kapsamaz → eksik working-set
+Çok büyük
+Birkaç bölgeyle çakışır → gereksiz page tutulur
+Sonsuz
+İşlemin tüm yaşamı boyunca kullandığı tüm page'ler
+İşletim Sistemi Kararları:
+• Her process'in working-set'i izlenir; WSSᵢ kadar frame tahsis edilir.
+• Yeterli frame varsa → yeni process başlatılabilir.
+• D > m olursa → bir process askıya alınır (page'leri swap out), frame'leri diğerlerine dağıtılır.
+• Working-set stratejisi: multiprogramming derecesini yüksek tutarken thrashing'i önler → CPU
+kullanımını optimize eder.
+SINAVD
+A ÇIKAR
+Sınav sorusu tipi: Δ=10 iken t1 anında working-set nedir? → Son 10 referansa bak, tekrarları
+kaldır, küme = working-set.
+7. Page-Fault Frequency (PFF)
+TANIM
+Thrashing'i working-set modeline göre daha doğrudan kontrol eden bir strateji. Page hatası
+oranı üst/alt sınırlarla yönetilir.
+Durum
+Page hatası oranı > Üst sınır
+Process'e bir frame daha tahsis et
+Page hatası oranı < Alt sınır
+Karar
+Process'ten bir frame al
+Aralıkta
+Değişiklik yapma
+Working-Set ile Page Fault Rate İlişkisi:
+• Bölge geçişlerinde page hatası oranı tepe yapar (yeni page'ler yükleniyor).
+• Bölge içinde yürütme sürerken page hataları azalır.
+• Yeterli bellek varsa (thrashing yoksa) bu döngüsel desen düzenli şekilde devam eder.
+8. Gerçek İşletim Sistemi Örnekleri
+Linux:
+• Demand paging + Second-chance (clock) algoritmasına benzer genel page değiştirme politikası.
+• active_list: Aktif kullanımda olduğu düşünülen page'ler.
+• inactive_list: Son başvurulmamış, geri alınmaya uygun page'ler.
+• Her page'in accessed biti vardır → başvuru gelince 1 yapılır; periyodik olarak sıfırlanır.
+• En az kullanılan → active_list'in önüne gelir → inactive_list'e taşınır.
+• Inactive'den tekrar başvurulursa → active_list'in arkasına döner.
+• Boş bellek eşiğin altına düşerse → kernel inactive_list'i tarar, page'leri boş frame havuzuna geri
+alır.
+Windows 10:
+• Clustering: Page hatası oluşunca sadece hatalı page değil, önceki ve sonraki birkaç page de
+getirilir (locality'den yararlanır).
+• Working set minimum: Process'in bellekte sahip olması garanti edilen minimum page sayısı.
+• Working set maximum: Yeterli bellek varsa ulaşılabilen üst sınır (bu sınır aşılabilir de).
+• Second-chance (clock) algoritması + local ve global değiştirme kombinasyonu.
+• Automatic working-set trimming: Boş bellek eşiğin altına düşünce process'lerin
+working-set'inden page kaldırılır; minimum'a ulaşana kadar devam eder.
+9. Algoritmaların Özet Karşılaştırması
+Algoritma
+Temel Fikir
+Avantaj
+FIFO
+En eski page çıkar
+Basit
+Dezavantaj
+Belady anomalisi; kullanımı yok sayar
+Optimal (OPT) En uzun süre
+kullanılmayacak page
+çıkar
+En az page hatası Uygulanamaz (gelecek bilinmez)
+LRU En uzun süre
+kullanılmayan çıkar
+OPT'a yakın Donanım desteği gerekir; pahalı
+Second-chance FIFO + referans biti
+kontrolü
+LRU yaklaşımı,
+ucuz
+Tüm page'ler ref=1 ise FIFO gibi
+Enhanced SC Ref + dirty bit ile 4 sınıf I/O azaltır Biraz daha karmaşık
+LFU En az kullanılan çıkar Aktif page'i korur Yaygın değil; pahalı
+MFU En çok kullanılan çıkar Yeni gelen page'i
+korur
+Yaygın değil; pahalı
+10. Sınav İçin Direkt Ezber Cevaplar
+Second-chance FIFO tabanlı; referans biti 0 → değiştir, 1 → ikinci şans ver (biti temizle). Clock
+algoritması olarak da bilinir.
+Enhanced SC Referans + dirty bit → 4 sınıf. (0,0) en iyi adaydır. I/O sayısını azaltmak için dirty
+bit dikkate alınır.
+Equal allocation m frame, n process → her process m/n frame alır.
+Proportional alloc. aᵢ = (sᵢ / S) × m formülüyle boyuta orantılı frame dağıtımı.
+Global
+replacement
+Tüm frame havuzundan seçim; yüksek throughput, yaygın; ama dış baskıya
+duyarlı.
+Local replacement Sadece kendi frame'lerinden seçim; tutarlı performans ama bellek israfı olabilir.
+Thrashing Process paging için çok fazla zaman harcıyorsa oluşur. Multiprogramming
+derecesi düşürülünce durur.
+Locality model Process bölgeden bölgeye hareket eder. Bölge = birlikte aktif kullanılan page
+kümesi.
+Working-set Son Δ referanstaki benzersiz page kümesi. WSSᵢ = ihtiyaç duyulan frame sayısı.
+D = Σ WSSᵢ > m → thrashing.
+PFF (Page-Fault
+Freq.)
+Üst sınır aşılırsa frame ekle; alt sınırın altına düşerse frame kaldır. Thrashing'i
+doğrudan kontrol eder.
+Linux page
+yönetimi
+active_list + inactive_list. accessed bit ile takip. Second-chance benzeri. Boş
+bellek eşiği → reclaiming.
+Windows page
+yönetimi
+Clustering + working-set min/max + automatic working-set trimming +
+Second-chance (clock).
+11. Boşluk Doldurma Provası
+1. Second-chance algoritması _____________________ algoritması olarak da bilinir.
+2. Second-chance'de referans biti 1 olan page'e _______ verilir ve biti _______ yapılır.
+3. Enhanced Second-chance'de en kolay değiştirilen sınıf _______ dir.
+4. Proportional allocation formülü: aᵢ = _____________________.
+5. Global replacement, process'in frame'lerini _______________________ seçmesine izin verir.
+6. Local replacement her process'in yalnızca _________________________ seçmesini sağlar.
+7. Bir process komutlarından daha fazla zaman paging'e harcıyorsa _______ olmuştur.
+8. Thrashing olduğunda multiprogramming derecesi _______________________.
+9. Locality model: process yürütülürken ______________________ hareket eder.
+10
+.
+Working-set: son Δ referanstaki _______________________ page kümesidir.
+11
+.
+D = Σ WSSᵢ > _______ ise thrashing meydana gelir.
+12
+.
+PFF'de page hatası üst sınırı aşarsa _______________________ yapılır.
+13
+.
+Linux'un iki page listesi _______________________ ve _______________________ dir.
+14
+.
+Windows'un page getirme stratejisi: hatalı page ile birlikte çevresindeki page'leri de getirmek →
+_______.
+12. Cevap Anahtarı
+1. Clock 2. ikinci şans / 0
+3. (0,0) — ne kullanılmış ne
+değiştirilmiş
+4. (sᵢ / S) × m
+5. tüm frame havuzundan 6. kendi frame'leri içinden
+7. thrashing 8. düşürülmelidir
+9. bölgeden bölgeye 10. benzersiz
+11. m (toplam fiziksel frame sayısı) 12. bir frame daha tahsis edilir
+13. active_list / inactive_list 14. clusterin

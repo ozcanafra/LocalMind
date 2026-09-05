@@ -1,0 +1,174 @@
+3) Deadlock Avoidance 
+Deadlock avoidance, sistemin unsafe state’e geçmesini engeller. 
+Yani process kaynak istediğinde sistem şunu kontrol eder: 
+Bu kaynağı verirsem sistem güvenli durumda kalır mı? 
+Eğer güvenli kalıyorsa kaynak verilir. 
+Güvenli kalmıyorsa process bekletilir. 
+1) Safe State 
+Safe state, sistemdeki tüm process’lerin deadlock olmadan tamamlanabileceği en az bir sıra 
+olmasıdır. 
+Bu sıraya: 
+Safe sequence 
+denir. 
+Örnek: 
+<P1, P3, P2> 
+Bu sırayla process’ler tamamlanabiliyorsa sistem safe state’tedir. 
+2) Unsafe State 
+Unsafe state, deadlock var demek değildir. 
+Ama: 
+Deadlock oluşma riski vardır. 
+Ezber: 
+Safe state → deadlock yok 
+Unsafe state → deadlock olabilir 
+Deadlock state → sistem kilitlenmiş 
+3) Banker’s Algorithm 
+Banker’s Algorithm, deadlock avoidance için kullanılır. 
+Temel tablolar: 
+Tablo 
+Available Boşta olan kaynak sayısı 
+Anlam 
+Tablo 
+Anlam 
+Max 
+Process’in maksimum isteyebileceği kaynak 
+Allocation Process’e şu anda verilmiş kaynak 
+Need 
+Formül: 
+Process’in tamamlanmak için hâlâ ihtiyaç duyduğu kaynak 
+Need = Max - Allocation 
+4) Banker’s Algorithm Çözüm Mantığı 
+Adımlar: 
+1. Need tablosunu hesapla. 
+2. Available değerine bak. 
+3. Need değeri Available’dan küçük/eşit olan process seç. 
+4. Process bitmiş kabul edilir. 
+5. Allocation kaynakları Available’a eklenir. 
+6. Tüm process’ler bitiyorsa safe state vardır. 
+Eğer hiçbir process seçilemiyorsa: 
+Safe sequence yoktur. 
+Sistem unsafe state’tedir. 
+4) Deadlock Detection 
+Deadlock detection, sistem deadlock oluşmasına izin verir ama sonra kontrol eder. 
+Bu yaklaşımda sistem periyodik olarak şunu sorar: 
+Şu anda deadlock var mı? 
+1) Tek Instance Kaynaklarda 
+Her kaynak türünden tek örnek varsa: 
+Wait-for graph 
+kullanılır. 
+Wait-for graph’ta: 
+P1 → P2 
+demek: 
+P1, P2’nin tuttuğu kaynağı bekliyor. 
+Graph’ta cycle varsa deadlock vardır. 
+2) Çok Instance Kaynaklarda 
+Her kaynaktan birden fazla varsa detection algoritması kullanılır. 
+Banker’s algorithm’e benzer ama amacı safe state bulmak değil, deadlock’taki process’leri 
+tespit etmektir. 
+5) Deadlock Recovery 
+Deadlock tespit edildikten sonra sistemin kurtulması gerekir. 
+İki ana yöntem vardır: 
+1. Process termination 
+2. Resource preemption 
+1) Process Termination 
+Deadlock’taki process’lerden bazıları sonlandırılır. 
+İki seçenek: 
+Yöntem 
+Açıklama 
+Tüm deadlock process’leri öldür Hızlı ama maliyetli 
+Tek tek öldür 
+Daha kontrollü ama yavaş 
+2) Resource Preemption 
+Kaynak bazı process’lerden zorla alınır ve başka process’e verilir. 
+Burada üç problem vardır: 
+Problem 
+Açıklama 
+Victim selection Hangi process’ten kaynak alınacak? 
+Rollback 
+Starvation 
+Process hangi güvenli duruma geri alınacak? 
+Aynı process sürekli kurban seçilebilir 
+6) Deadlock ve Starvation Farkı 
+Deadlock 
+Starvation 
+Process’ler birbirini bekler Bir process sürekli bekler 
+Döngüsel bekleme vardır Döngü olmak zorunda değildir 
+Hiçbiri ilerleyemez 
+Bazıları ilerler, biri bekler 
+Kaynak kilitlenmesi vardır Adaletsiz kaynak/CPU dağıtımı vardır 
+Ezber: 
+Deadlock = karşılıklı kilitlenme 
+Starvation = sonsuz bekleme 
+12. SLAYT – BELLEK YÖNETİMİ 
+Bellek yönetimi, işletim sisteminin en temel konularından biridir. Bu slaytta giriş, swapping, 
+bitişik bellek tahsisi, segmentation ve paging anlatılır. Belleğin modern sistemlerde merkezi 
+role sahip olduğu, CPU’nun program counter’a göre komutu bellekten getirdiği, decode ettiği 
+ve gerekirse verileri bellekten aldığı belirtilir.  
+1) Bellek Neden Önemli? 
+CPU bir komutu çalıştırmak için o komutun ve verinin bellekte olmasına ihtiyaç duyar. 
+Genel instruction cycle: 
+Fetch → Decode → Execute 
+Aşama 
+Açıklama 
+Fetch CPU komutu bellekten getirir 
+Aşama 
+Açıklama 
+Decode Komut çözülür 
+Execute Komut çalıştırılır 
+Bellek sadece adresleri görür. Komut mu veri mi olduğunu bilmez. 
+2) CPU’nun Doğrudan Erişebildiği Yerler 
+CPU doğrudan şuralara erişebilir: 
+1. Register 
+2. Main memory 
+CPU doğrudan diske erişemez. Diskteki veri önce belleğe alınmalıdır. 
+3) Register ve Memory Farkı 
+Yapı 
+Register 
+Hız 
+Çok hızlı 
+Main memory Register’a göre yavaş 
+Disk 
+Çok daha yavaş 
+Register’lara genelde bir CPU cycle içinde erişilebilir. Ana belleğe erişim daha uzun sürebilir. 
+Bu yüzden cache kullanılır. 
+2) Bellek Koruma 
+Bellek koruma şu yüzden gereklidir: 
+Bir process başka process’in belleğini bozmamalı. 
+Kullanıcı process’i işletim sistemi belleğine erişmemeli. 
+1) Base ve Limit Register 
+Bellek korumasında iki register kullanılır: 
+Register 
+Görev 
+Base register Legal fiziksel başlangıç adresini tutar 
+Limit register Adres aralığının boyutunu tutar 
+Slaytta base register’ın legal fiziksel bellek adresinin başlangıç değerini, limit register’ın ise 
+aralığın boyutunu tuttuğu belirtilir.  
+2) Base-Limit Kontrolü 
+Bir kullanıcı programı adres ürettiğinde donanım şunu kontrol eder: 
+base ≤ adres < base + limit 
+Eğer adres bu aralıktaysa erişime izin verilir. 
+Eğer değilse: 
+trap / hata oluşur 
+3) Neden Kullanıcı Base-Limit Register’ı Değiştiremez? 
+Çünkü base ve limit register’ları özel ayrıcalıklı komutlarla yüklenir. 
+Bu komutlar sadece: 
+Kernel mode 
+içinde çalışabilir. 
+Yani kullanıcı programı bu register’ları değiştiremez. 
+3) Address Binding 
+Programdaki adreslerin gerçek bellek adreslerine bağlanmasına address binding denir. 
+Üç zamanı vardır: 
+Binding zamanı 
+Açıklama 
+Compile time Programın bellekte nereye yerleşeceği önceden biliniyorsa 
+Binding zamanı 
+Açıklama 
+Load time 
+Program belleğe yüklenirken adresler belirlenir 
+Execution time Program çalışırken adresler değişebilir 
+Modern sistemlerde çoğunlukla execution-time binding kullanılır. 
+1) Logical Address ve Physical Address 
+Adres 
+Açıklama 
+Logical address CPU tarafından üretilen adres 
+Physical address Ana bellekteki gerçek adres 
+CPU logical address üretir. Bu adres MMU tarafından physical address’e çevrilir.

@@ -1,0 +1,7 @@
+# Çekirdek bağımlılıklar (CLI için yeterli)
+foundry-local-sdk>=1.2.4
+numpy>=1.26
+openai>=1.40
+
+# Web arayüzü (streamlit run app.py). CLI kullanacaksan gerekmez.
+streamlit>=1.30
