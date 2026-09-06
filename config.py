@@ -125,7 +125,7 @@ HYBRID_ALPHA = 0.7
 # "Karnıyarık tarifi verir misin?" sorusunun ham kosinüs skoru 0.411,
 # yani eşiğin üstünde. Koruma hiç devreye girmiyor, model alakasız
 # bağlamla cevap uyduruyordu.
-SIMILARITY_THRESHOLD = 0.51
+SIMILARITY_THRESHOLD = 0.49
 
 # Qwen3-embedding modeli sorguları bu formatta bekler (asimetrik arama).
 # Belgeler ham hâlde, sorgular bu ön ekle gömülür.
