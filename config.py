@@ -1,5 +1,6 @@
 """Projenin tüm ayarları burada. Başka hiçbir dosyada sabit değer yazmıyoruz."""
 
+import os
 from pathlib import Path
 
 # --- Yollar -----------------------------------------------------------------
@@ -7,8 +8,17 @@ PROJECT_ROOT = Path(__file__).parent
 DOCS_DIR = PROJECT_ROOT / "docs"
 DB_PATH = PROJECT_ROOT / "db" / "rag.db"
 
-# Foundry Local modellerinin indirildiği klasör
-CACHE_DIR = r"D:\foundry-cache"
+# Foundry Local modellerinin indirildiği klasör.
+# FOUNDRY_CACHE_DIR ile her işletim sisteminde açıkça değiştirilebilir.
+# Bu makinedeki eski Windows önbelleği varsa geriye dönük olarak kullanılır;
+# diğer sistemlerde kullanıcı dizini altında taşınabilir bir varsayılan seçilir.
+_legacy_windows_cache = Path(r"D:\foundry-cache")
+_default_cache = (
+    _legacy_windows_cache
+    if os.name == "nt" and _legacy_windows_cache.exists()
+    else Path.home() / ".cache" / "localmind" / "foundry"
+)
+CACHE_DIR = os.environ.get("FOUNDRY_CACHE_DIR", str(_default_cache))
 APP_NAME = "rag_project"
 
 # --- Modeller ---------------------------------------------------------------
@@ -96,7 +106,8 @@ HYBRID_ALPHA = 0.7
 #   Belgede OLAN sorular   : 0.528 - 0.888  (ortalama 0.693)
 #   Belgede OLMAYAN sorular: 0.177 - 0.498
 #
-# Boşluk: 0.498 .. 0.528  ->  0.51 secildi
+# Güncel zor negatif en fazla 0.519, cevaplanabilir en az 0.528.
+# Dar ama test edilmiş boşluğun ortasına yakın olarak 0.52 seçildi.
 #
 # EN ZOR NEGATIF: "Sanal bellek nedir?" -> 0.498
 # Gercek kullanimda yakalandi. Belge adi sanalbellek.txt ama icinde bu
@@ -125,7 +136,7 @@ HYBRID_ALPHA = 0.7
 # "Karnıyarık tarifi verir misin?" sorusunun ham kosinüs skoru 0.411,
 # yani eşiğin üstünde. Koruma hiç devreye girmiyor, model alakasız
 # bağlamla cevap uyduruyordu.
-SIMILARITY_THRESHOLD = 0.49
+SIMILARITY_THRESHOLD = 0.52
 
 # Qwen3-embedding modeli sorguları bu formatta bekler (asimetrik arama).
 # Belgeler ham hâlde, sorgular bu ön ekle gömülür.

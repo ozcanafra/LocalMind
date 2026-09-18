@@ -24,7 +24,13 @@ import numpy as np
 from src import generator as gen
 from src import text_utils as tu
 from src.chunker import chunk_document, classify_line
-from src.retriever import KeywordIndex, cosine_similarities, tokenize
+from src.retriever import (
+    KeywordIndex,
+    cosine_similarities,
+    expand_query,
+    order_for_context,
+    tokenize,
+)
 
 _passed = 0
 _failed = []
@@ -138,6 +144,14 @@ def test_chunker():
     check_true("baslik chunk metnine gomulur",
                chunks[1]["text"].startswith("[2. IP PROTOKOLU]"))
 
+    short_sections = chunk_document(
+        "1. Recovery\nAçıklama yeterince uzun bir giriş cümlesidir ve burada tutulur.\n"
+        "2. Resource Preemption\nKaynak zorla alınır.",
+        chunk_size=120, overlap=0, min_words=8,
+    )
+    check_true("kisa chunk birlesirken basligi korunur",
+               "2. Resource Preemption" in short_sections[0]["text"])
+
 
 # --- retriever --------------------------------------------------------------
 
@@ -150,6 +164,18 @@ def test_retriever():
 
     # Türkçe I/İ sorunu: 'IHL'.lower() dogru calismali
     check_true("turkce buyuk harf normalize", "ihl" in tokenize("IHL"))
+    expanded_problem = expand_query("FIFO algoritmasının bilinen sorunu nedir?")
+    check_true("sorun sorgusu teknik es anlamlilarla genisler",
+               "dezavantaj" in expanded_problem and "anomali" in expanded_problem)
+    check_true("diger ad sorgusu isim kalibiyla genisler",
+               "alternatif isim" in expand_query("SJF algoritmasının diğer adı nedir?"))
+    check_true("nedir sorgusu tanimla genisler",
+               "tanım" in expand_query("Thrashing nedir?"))
+    check_true("minimum sorgusu optimal ile genisler",
+               "optimal" in expand_query("Bekleme süresini en aza indiren hangisidir?"))
+    check_true("distance vector dezavantaji teknik terimlerle genisler",
+               "yakınsaklık" in expand_query("Distance Vector dezavantajı nedir?"))
+    check("normal sorgu degismez", expand_query("TTL kaç bittir?"), "TTL kaç bittir?")
 
     texts = [
         "TTL 8 bit datagram suresi",
@@ -174,6 +200,11 @@ def test_retriever():
     check_true("kosinus: ayni vektor 1.0", abs(sims[0] - 1.0) < 1e-5)
     check_true("kosinus: dik vektor 0.0", abs(sims[1]) < 1e-5)
     check_true("bos matris cokmez", len(cosine_similarities([1, 0], np.zeros((0, 0)))) == 0)
+    ordered = order_for_context([
+        {"source": "a", "chunk_index": 1, "score": 0.8},
+        {"source": "a", "chunk_index": 0, "score": 0.5},
+    ])
+    check("en ilgili chunk baglamda en sona gelir", ordered[-1]["score"], 0.8)
 
 
 # --- generator --------------------------------------------------------------
@@ -283,6 +314,66 @@ def test_generator():
     check_true("iki mesaj uretilir", len(messages) == 2)
     check_true("sistem mesajinda fallback var", "Bilmiyorum." in messages[0]["content"])
     check_true("soru en sonda", messages[1]["content"].rstrip().endswith("CEVAP:"))
+    focused = gen.best_evidence_line(
+        "Time quantum çok büyük olursa ne olur?",
+        [{
+            "text": "[RR]\nq büyük olursa → FCFS gibi davranır q çok küçük olursa → çok fazla context switch",
+            "score": 0.8,
+        }],
+    )
+    check_true("odak kanit dogru karsit kosulu secer",
+               "FCFS" in focused and "çok küçük" not in focused)
+    bit_focus = gen.best_evidence_line(
+        "Second-chance algoritması hangi bite bakarak karar verir?",
+        [{
+            "text": "[Second-chance]\nTANIM\nSecond-chance FIFO tabanlı bir algoritmadır.\n"
+                    "Değiştirilecek page seçilirken referans biti incelenir.",
+            "heading": "Second-chance", "score": 0.8,
+        }],
+    )
+    check_true("bit sorusu referans biti satirini secer", "referans biti" in bit_focus)
+    comparison = gen.extractive_answer(
+        "Global replacement ile local replacement arasındaki fark nedir?",
+        [{"text": "Global\nTüm frame'ler havuzundan seçim;\nLocal\n"
+                  "Her process yalnızca kendi frame'leri içinden seçer", "score": 0.8}],
+    )
+    check_true("iki satirli karsilastirma birlikte doner",
+               "Global replacement" in comparison and "Local replacement" in comparison)
+    enhanced = gen.extractive_answer(
+        "Enhanced second-chance algoritmasında en kolay değiştirilen sınıf hangisidir?",
+        [{"text": "[Enhanced]\n1 (En iyi) 0 0 Ne kullanılmış ne değiştirilmiş", "score": 0.8}],
+    )
+    check_true("enhanced second chance en iyi sinifi dogrudan doner",
+               "En iyi" in enhanced and "0 0" in enhanced)
+    direct_facts = [
+        ("IP protokolünün iki temel görevi nedir?",
+         "EZBER IP'nin iki temel görevi: Adresleme ve Yönlendirme", "Adresleme"),
+        ("Scheduling kriterlerinden hangileri maksimum yapılmak istenir?",
+         "CPU Utilization + Throughput → Maksimum", "Throughput"),
+        ("Banker's algorithm'de Need nasıl hesaplanır?",
+         "Need = Max - Allocation", "Max - Allocation"),
+    ]
+    for question, text, expected in direct_facts:
+        answer = gen.extractive_answer(question, [{"text": text, "score": 0.8}])
+        check_true(f"hizli kaynak: {expected}", expected in answer)
+    extractive = gen.extractive_answer(
+        "Time quantum çok büyük seçilirse ne olur?",
+        [{
+            "text": "[RR]\nq büyük olursa → FCFS gibi davranır q çok küçük olursa → çok fazla context switch",
+            "score": 0.8,
+        }],
+    )
+    check_true("dogrudan kosul sorusu kaynaktan cevaplanir", "FCFS" in extractive)
+    definition = gen.extractive_answer(
+        "Thrashing nedir?",
+        [{
+            "text": "[Thrashing]\nTANIM\nBir process daha fazla zamanı paging için harcıyorsa thrashing olmuştur.",
+            "score": 0.8,
+        }],
+    )
+    check_true("acik tanim kaynaktan dogrudan cevaplanir", "thrashing" in definition.lower())
+    check("yorum sorusu LLM'e birakilir",
+          gen.extractive_answer("Bu yaklaşımı açıklayınız", FAKE), "")
 
 
 class _FakeStreamModel:

@@ -281,7 +281,11 @@ def chunk_document(
     for ch in chunks:
         if merged and ch["word_count"] < min_words:
             prev = merged[-1]
-            prev["text"] += "\n" + ch["text"].split("\n", 1)[-1]
+            # Kısa parçayı bir öncekine yapıştırırken başlığını atma. Başlık
+            # bazen cevabın kendisidir (ör. "1. Process termination" ve
+            # "2. Resource preemption"). Yalnız gövdeyi eklemek bu iki yöntemi
+            # indeksten sessizce siliyordu.
+            prev["text"] += "\n" + ch["text"]
             prev["word_count"] += ch["word_count"]
         else:
             merged.append(ch)

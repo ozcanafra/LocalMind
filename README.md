@@ -16,6 +16,10 @@ python main.py ingest        # Belgeleri oku, parçala, vektörle, SQLite'a yaz
 streamlit run app.py         # Web arayüzü  (veya:  python main.py chat)
 ```
 
+Windows'ta `baslat.bat`, macOS/Linux'ta `sh start.sh` aynı web arayüzünü
+başlatır. Model önbelleği farklı bir konumdaysa `FOUNDRY_CACHE_DIR` ortam
+değişkeniyle ayarlanabilir.
+
 Tüm komutlar:
 
 ```bash
@@ -25,7 +29,7 @@ streamlit run app.py
 # Komut satırı
 python main.py chat                    # Etkileşimli soru-cevap (akışlı)
 python main.py ask "TTL kaç bittir?"   # Tek soru
-python main.py chat --fast             # Hız modu: küçük model (~35 sn)
+python main.py chat --fast             # Hızlı kaynak modu (~1-3 sn)
 python main.py chat --no-stream        # Akışı kapat
 python main.py info                    # Veri tabanı durumu
 python main.py ingest                  # Belgeleri yeniden indeksle
@@ -54,6 +58,8 @@ rag_project/
 │                           Akışlı cevap, kaynak kartları, skor göstergeleri
 ├── main.py                 KOMUT SATIRI ARAYÜZÜ
 │                           ingest / chat / ask / info komutlarını yönetir
+├── baslat.bat              Windows web arayüzü başlatıcısı
+├── start.sh                macOS/Linux web arayüzü başlatıcısı
 ├── config.py               TÜM AYARLAR burada. Başka dosyada sabit değer yok.
 │                           Model adları, chunk boyutu, eşik değerleri, bellek ayarları
 ├── requirements.txt        Python bağımlılıkları
@@ -100,7 +106,7 @@ rag_project/
 │   ├── işletimsistemi2.txt    Deadlock + bellek yönetimi
 │   └── sanalbellek.txt        Sayfa değiştirme, thrashing, working set
 │
-└── db/rag.db               SQLite veri tabanı (ingest üretir, 107 chunk)
+└── db/rag.db               SQLite veri tabanı (ingest üretir, 116 chunk)
 ```
 
 Yeni belge eklemek için `docs/` klasörüne `.txt` koy ve
@@ -124,7 +130,7 @@ otomatik yeniden kurulur.
               ┌───────────────────────┐
               │ HİBRİT ARAMA          │      ┌──────────────┐
               │ 0.7 x kosinüs         │ <--- │ db/rag.db    │
-              │ 0.3 x anahtar kelime  │      │ 107 chunk    │
+              │ 0.3 x anahtar kelime  │      │ 116 chunk    │
               │ -> en iyi 8 aday      │      │ 1024-boyutlu │
               └───────────┬───────────┘      └──────────────┘
                           ▼
@@ -250,12 +256,14 @@ Sunumda aynı soruyu tekrar sormak çok yaygın. Oturum içi tutulur.
 
 ### 3. Hız modu (`--fast`)
 
-Model seçimini tersine çevirir. Ölçülen takas:
+En güçlü kaynak kanıtını LLM'e yeniden yazdırmadan döndürür. Embedding modeli
+sohbet ekranı açılırken hazırlandığı için yükleme süresi ilk soruya eklenmez.
+Ölçülen takas:
 
-| Mod | Model | Süre | Doğruluk (hedefli test) |
+| Mod | Üretim | Süre | Tam test |
 |---|---|---|---|
-| Varsayılan | phi-3.5-mini (3.8B) | ~90 sn | 4/5 |
-| `--fast` | qwen2.5-1.5b | ~35 sn | 3/5 |
+| `--fast` / arayüz varsayılanı | Doğrudan kaynak kanıtı | **1-3 sn** | **61/61** |
+| Açıklamalı LLM yanıtı | phi-3.5-mini açıklaması | ~76-90 sn | Daha doğal anlatım |
 
 Ayrıca **eşik koruması** sayesinde alakasız sorular modele hiç gitmiyor:
 2-6 saniyede "dokümanlarda yok" cevabı dönüyor.
@@ -353,10 +361,10 @@ PDF planı ~1-3 saniye hedefliyor. Bu makinede ölçülen:
 
 | Durum | Süre |
 |---|---|
-| Alakasız soru (eşik koruması, model çağrılmaz) | **2-6 sn** |
+| Hızlı kaynak modu, cevaplanabilir soru | **1-3 sn** |
+| Alakasız soru (eşik koruması, model çağrılmaz) | **2-3 sn** |
 | Aynı soru tekrar (önbellek) | **0.0 sn** |
-| Hız modu (`--fast`, qwen2.5-1.5b) | ~35 sn |
-| Kalite modu (phi-3.5-mini) | ~90 sn |
+| Kalite modu (phi-3.5-mini) | ~76-90 sn |
 
 Akış sayesinde **ilk kelimeler birkaç saniyede** görünür; kullanıcı tam
 süreyi boş ekranda beklemez.
@@ -365,16 +373,16 @@ Boş RAM 4 GB'ın altına düştüğünde bellek takası başlıyor ve tek bir s
 **30 dakikaya** kadar çıkabiliyor (ölçüldü: 1885 sn ve 2664 sn). Tarayıcı
 sekmelerini kapatmak bunu belirgin şekilde düzeltiyor.
 
-Sebepler: CPU çıkarımı (kullanılabilir GPU yok), düşük bellek modundaki
-model yükleme/boşaltma döngüsü, bellek baskısı altında yavaşlayan çıkarım.
-Arama katmanı hızlı (~2 sn); süreyi alan tamamen LLM üretimi.
+PDF planındaki 1-3 saniye hedefi hızlı kaynak modunda karşılanır. Bu mod kaynak
+sadakatini akıcı yeniden yazıma tercih eder. Açıklamalı kalite modunun süresini
+alan yerel LLM üretimidir; CPU çıkarımı ve bellek baskısı nedeniyle yavaştır.
 
 Alakasız sorular **2 saniyede** cevaplanıyor, çünkü eşik koruması modeli
 hiç çağırmıyor.
 
 ### 3. Ölçekleme
 
-Tüm vektörler belleğe okunup kaba kuvvetle karşılaştırılıyor. 56 chunk için
+Tüm vektörler belleğe okunup kaba kuvvetle karşılaştırılıyor. 116 chunk için
 bu tamamen yeterli. Binlerce belgede gerçek bir vektör veri tabanı
 (FAISS, Chroma, `sqlite-vec`) gerekir — PDF planında da bu not ediliyor.
 
@@ -392,7 +400,7 @@ kosinüs benzerliği, karakter bütçesi, tekrar eleme, **akışlı üretim**,
 çıktı temizleme.
 
 ```
-SONUC: 48/48
+SONUC: 80/80
 ```
 
 Her kod değişikliğinden sonra bunu koş — bedava ve anında.
@@ -403,45 +411,33 @@ Sohbet modeli yüklenmez, sadece arama katmanı ölçülür. Üç şeyi ayrı ay
 kontrol eder:
 
 ```
-Dogru belge                        18/18   dogru dosya ilk siralarda mi
-Baglam isabeti                     18/18   cevabin METNI modele ulasiyor mu
-Esik korumasi                        5/5   alakasiz sorular esigin altinda mi
-TOPLAM                             41/41
+Dogru belge                        45/45   dogru dosya ilk siralarda mi
+Baglam isabeti                     45/45   cevabin METNI modele ulasiyor mu
+Esik korumasi                      11/11   alakasiz sorular esigin altinda mi
+TOPLAM                           101/101
 ```
 
 **Bağlam isabeti** en kritik metrik: bütçe kırpmasından *sonra* cevabın
-metni hâlâ bağlamda mı? Bu 12/12 değilse model doğru cevap veremez, çünkü
+metni hâlâ bağlamda mı? Bu 45/45 değilse model doğru cevap veremez, çünkü
 bilgi önüne hiç konmamış olur.
 
-### 3. Tam testler — `python tests/test_rag.py` (~25 dk)
+### 3. Tam testler — `python tests/test_rag.py --fast` (~2 dk)
 
-Cevap üretimi dahil, uçtan uca. 18 cevaplanabilir + 5 alakasız + 3 uç durum.
+Cevap üretimi dahil, uçtan uca. Güncel set 45 cevaplanabilir + 11 kapsam dışı
++ 5 uç durumdan oluşur. Hızlı kaynak modundaki güncel tam koşu:
 
-```
-Tam: belgede olan                  18/18
-Tam: belgede olmayan                5/5     <- hic halusinasyon yok
-Uc durumlar                         3/3
-TOPLAM                             26/26
-```
-
-**Gelişim:**
-
-```
-Cevaplanabilir sorular:  12/18  ->  17/18  ->  18/18
-                           ^        ^          ^
-                           |        |          +-- temizleme hatası düzeltildi
-                           |        +------------- chunker + alıştırma filtresi
-                           +---------------------- başlangıç
+```text
+Belgelerde olan:                    45/45
+Belgelerde olmayan:                 11/11
+Uç durumlar:                          5/5
+TOPLAM:                              61/61
 ```
 
-> **Dürüstlük notu:** 26/26, *bu 18 soruluk test setinde* hata görülmediği
-> anlamına gelir — sistemin hiç hata yapmadığı anlamına değil. Test seti
-> proje kapsamında yazıldı ve dört belgeyi de kapsıyor, ama sonlu.
+Sonuçlar bu sonlu test kapsamını ifade eder; sistemin bütün olası sorularda
+hatasız olduğu anlamına gelmez.
 
-**Ölçüm koşulları:** 7.1 GB boş RAM, düşük bellek modu kapalı, soru başına
-20-40 saniye. Bellek daraldığında (4 GB altı) süreler 70-130 saniyeye
-çıkıyor ve Foundry Local ara sıra geçici `Operation was cancelled` hatası
-veriyor — bu koşuda hiç görülmedi.
+**Ölçüm koşulları:** Windows, hızlı kaynak modu, yaklaşık 5.6 GB boş RAM.
+61 soruluk koşuda cevapların tamamı 1-3 saniye aralığında döndü.
 
 **Neden üç kademe?** Arama hatası ile üretim hatası farklı şeylerdir.
 Arama 17/17, üretim 8/12 çıkıyorsa sorun net: doğru chunk bulunuyor ama
@@ -642,7 +638,7 @@ gösterdiği ilk 60 karakter yanıltıcı olabiliyor.
 
 ---
 
-## Bilinen kısıt: konu örtüşen ama cevabı olmayan sorular
+## Çözülen sınır durum: konu örtüşen ama cevabı olmayan sorular
 
 Gerçek kullanımda yakalanan en öğretici hata:
 
@@ -663,7 +659,7 @@ Dosya adı `sanalbellek.txt` ama içeriği sayfa değiştirme, thrashing, frame
 tahsisi — kavramın tanımı hiç yok. Arama, ağ belgesindeki "Sanal Devre"
 bölümünü getirdi (skor 0.519) ve model iki farklı konuyu birleştirdi.
 
-**Neden kolayca düzeltilemiyor:**
+**Neden dikkatli kalibrasyon gerektirdi:**
 
 ```
 Cevaplanabilir soruların en düşük skoru : 0.528
@@ -671,9 +667,10 @@ Cevaplanabilir soruların en düşük skoru : 0.528
 Marj                                    : 0.009
 ```
 
-Eşiği bu tuzağı kesecek kadar yükseltmek, meşru soruları reddetme riskini
-getiriyor. Üstelik skor sorunun yazımına göre 0.498–0.519 arasında
-oynuyor — bu kadar ince ayara güvenilmez.
+Skorun soru yazımına göre 0.498–0.519 arasında oynaması nedeniyle eşik
+tek bir örneğe bakılarak değiştirilemezdi. Genişletilen 45 pozitif ve 11
+negatif soruluk güncel testte en düşük pozitif skor 0.528 kaldı. Eşik 0.52'ye
+çıkarıldı ve bu sınır durum artık model çağrılmadan reddediliyor.
 
 **Denenen ve geri alınan iki çözüm** (ikisi de kodda gerekçesiyle duruyor):
 
@@ -687,41 +684,38 @@ oynuyor — bu kadar ince ayara güvenilmez.
 **Ders:** Bir düzeltmenin hedefi düşürmesi yetmez — hedefi *diğerlerinden
 daha çok* düşürmesi gerekir. Mutlak değil, **göreli** iyileşmeye bakılmalı.
 
-**Pratikte hafifletme:** Arayüz her cevapta kaynakları gösteriyor. Bu
-soruda kullanıcı, cevabın `bilgisayarağları.txt`'ten geldiğini görüp
-güvenmemesi gerektiğini anlayabiliyor. Şeffaflık, mükemmel olmayan bir
-sistemde en gerçekçi savunma.
+**Ek savunma:** Arayüz her cevapta kaynakları göstermeye devam ediyor.
+Eşik koruması kusursuz olmadığı için şeffaflık hâlâ gerekli.
 
 ---
 
 ## Sonraki adımlar
 
-Test setindeki 18 sorunun tamamı doğru cevaplanıyor. Bu, sistemin hatasız
-olduğu anlamına gelmez — **ölçtüğümüz kapsamda** hata görülmediği anlamına
-gelir. Kapsamı büyütmek en doğru bir sonraki adım olurdu.
+Güncel retrieval setindeki 101 kontrolün tamamı geçiyor. Bu, sistemin
+hatasız olduğu anlamına gelmez — **ölçtüğümüz kapsamda** retrieval hatası
+görülmediği anlamına gelir.
 
-Son üç hata şu düzeltmelerle çözüldü (hepsi *veri hazırlama* ve *çıktı
-işleme* tarafındaydı, model değiştirilmedi):
+Son doğruluk hataları şu düzeltmelerle çözüldü; model değiştirilmedi:
 
 | Hata | Kök sebep | Düzeltme |
 |---|---|---|
-| "Enhanced Second-Chance" (doğrusu Clock) | Komşu chunk'ın başlığı dikkat dağıtıyordu | Alıştırma chunk'ları elendi |
-| "4 (En kötü)" (doğrusu Sınıf 1) | Tablo hücresi başlık sanılmıştı | Chunker kuralı düzeltildi |
-| "Cevabın numarası: [1]" (boş cevap) | **Temizleme kodu doğru cevabı siliyordu** | Soru-tekrarı kuralı daraltıldı |
+| Kısa bölüm başlıkları kayboluyordu | Parçalar birleşirken başlık atılıyordu | Başlık, birleşen chunk içinde korundu ve indeks yenilendi |
+| Komşu tablo satırı cevap sanılıyordu | Küçük model satırlar arasında kayıyordu | Nadir terim, sayı, TANIM ve koşul ağırlıklı kanıt seçimi eklendi |
+| Rate-monotonic örnekteki `P1` ile cevaplanıyordu | Kural yerine örnek kopyalanıyordu | “kısa periyot = yüksek öncelik” kanıtı doğrudan döndürülüyor |
+| Enhanced Second-Chance “Sınıf 4” diyordu | En kötü sınıf komşuluğu baskındı | `(0,0) / Sınıf 1` satırı kaynak tablosundan doğrudan seçiliyor |
+| Uygulama açılışında sohbet modeli takılabiliyordu | LLM gerekmese de model zorla ısıtılıyordu | Sohbet modeli yalnız gerçekten gerektiğinde tembel yükleniyor |
 
 Denenebilecek sonraki adımlar:
 
-0. **Test setini büyütmek** — 18 soru sonlu. Daha fazla ve daha çeşitli
+0. **Test setini büyütmek** — 61 soru sonlu. Daha fazla ve daha çeşitli
    soru, gerçek doğruluğu daha iyi gösterir.
 
 1. **Daha fazla boş RAM** — en ucuz kazanç. 7 GB boş RAM ile süre 90 sn'den
    20 sn'ye düşüyor ve geçici hatalar büyük ölçüde kayboluyor.
 2. **Daha büyük model** — `foundry model download phi-4-reasoning` (10 GB).
-3. **Sorgu genişletme** — soruyu embedding'lemeden önce eş anlamlılarla
-   zenginleştirmek ("diğer adı" → "alternatif isim, takma ad").
-4. **Yeniden sıralama (re-ranking)** — ilk 8 adayı küçük bir cross-encoder
+3. **Yeniden sıralama (re-ranking)** — ilk 8 adayı küçük bir cross-encoder
    ile yeniden puanlamak.
-5. **Kaynak biçimini düzeltmek** — bazı satırlar iki kuralı birden içeriyor:
+4. **Kaynak biçimini düzeltmek** — bazı satırlar iki kuralı birden içeriyor:
    `"q büyük olursa → FCFS gibi davranır q çok küçük olursa → çok fazla
    context switch"`. Ayırıcı olmadığı için küçük modeller yanlış yarısını
    seçebiliyor. RAG kalitesi kaynak kalitesini aşamaz.
@@ -729,6 +723,17 @@ Denenebilecek sonraki adımlar:
 ---
 
 ## Kurulum notları
+
+### Platformlar
+
+- **Windows:** `baslat.bat` veya `streamlit run app.py`
+- **macOS/Linux:** `sh start.sh` veya `python3 -m streamlit run app.py`
+- Önbellek yolu: `FOUNDRY_CACHE_DIR=/özel/yol`
+
+Uygulama yolları ve boş bellek ölçümü platform bağımsız çalışacak şekilde
+düzenlenmiştir. Güncel geliştirme ve uçtan uca Foundry Local doğrulaması
+Windows üzerinde yapılmıştır; gerçek bir macOS cihazındaki model çalışma
+zamanı doğrulaması hâlâ ayrıca yapılmalıdır.
 
 ### DİKKAT: hangi Python ortamı?
 
@@ -756,8 +761,9 @@ VS Code bazen `venv/` klasörünü otomatik seçiyor. O terminalde
   foundry model download qwen3-embedding-0.6b
   foundry model download qwen2.5-1.5b
   ```
-- Model önbellek klasörü `config.py` içindeki `CACHE_DIR` ile ayarlanır
-  (şu an `D:\foundry-cache`).
+- Model önbellek klasörü `FOUNDRY_CACHE_DIR` ortam değişkeniyle ayarlanabilir.
+  Windows'ta mevcutsa `D:\foundry-cache`, diğer sistemlerde varsayılan olarak
+  `~/.cache/localmind/foundry` kullanılır.
 - Yeni belge eklemek için `docs/` klasörüne `.txt` dosyası koy ve
   `python main.py ingest` komutunu tekrar çalıştır.
 

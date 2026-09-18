@@ -186,7 +186,7 @@ def build_parser():
     )
     parser.add_argument(
         "--fast", action="store_true",
-        help="Hız modu: küçük modeli tercih et (~35 sn, kalite biraz düşer)",
+        help="Hızlı kaynak modu: açık kanıtı LLM çağırmadan döndür",
     )
     sub = parser.add_subparsers(dest="command")
 

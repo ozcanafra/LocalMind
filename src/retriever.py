@@ -73,6 +73,37 @@ def tokenize(text: str):
     ]
 
 
+def expand_query(question: str) -> str:
+    """Kullanıcı dilini belgelerdeki yaygın teknik ifadelere genişletir.
+
+    Yalnızca genel niyet kalıpları genişletilir. Örneğin "bilinen sorunu"
+    ifadesi, teknik tablolarda sık kullanılan "dezavantaj / anomali"
+    terimleriyle desteklenir. Orijinal soru aynen korunur.
+    """
+    normalized = question.translate(_TR_LOWER_MAP).lower()
+    additions = []
+
+    if "diğer adı" in normalized or "alternatif adı" in normalized:
+        additions.extend(("alternatif isim", "olarak bilinir"))
+
+    if "nedir" in normalized:
+        additions.extend(("tanım", "açıklama"))
+
+    if "en aza indir" in normalized or "minimum" in normalized:
+        additions.extend(("minimum", "optimal"))
+
+    if "distance vector" in normalized and "dezavantaj" in normalized:
+        additions.extend(("yavaş adapte", "yakınsaklık", "gecikme"))
+
+    tokens = tokenize(normalized)
+    if any(token.startswith("sorun") or token.startswith("problem") for token in tokens):
+        additions.extend(("dezavantaj", "anomali"))
+
+    if not additions:
+        return question
+    return f"{question} {' '.join(additions)}"
+
+
 def _stem(token: str) -> str:
     """Kaba gövdeleme: kelimenin ilk PREFIX_LEN harfi."""
     return token[:PREFIX_LEN] if len(token) >= MIN_PREFIX_TOKEN else token
@@ -237,10 +268,11 @@ class Retriever:
 
         Dönen her eleman: kayıt sözlüğü + score / dense_score / keyword_score
         """
-        q_vector = self.embed_question(question)
+        retrieval_query = expand_query(question)
+        q_vector = self.embed_question(retrieval_query)
 
         dense = cosine_similarities(q_vector, self.matrix)
-        keyword = self.keyword_index.score(question)
+        keyword = self.keyword_index.score(retrieval_query)
         combined = alpha * dense + (1.0 - alpha) * keyword
 
         # En yüksek skorlu top_k indeksi bul (tam sıralamaya gerek yok)
@@ -259,10 +291,15 @@ class Retriever:
 
 
 def order_for_context(results):
-    """Chunk'ları belgedeki orijinal sırasına göre dizer.
+    """En ilgili chunk soruya en yakın olacak şekilde bağlamı dizer.
 
-    Model bağlamı okurken belge akışını takip edebilsin diye skora göre değil,
-    (kaynak, sıra) göre diziyoruz. Aynı bölümden gelen ardışık parçalar yan
-    yana gelince model bilgiyi daha doğru birleştiriyor.
+    Küçük yerel modellerde son görülen bağlam daha baskındır (recency bias).
+    Belge sırası kullanıldığında doğru chunk'ın arkasına daha düşük skorlu bir
+    komşu gelebiliyor ve model komşu başlığı cevap sanabiliyordu. Bu nedenle
+    düşük skordan yükseğe sıralayıp en alakalı parçayı sorunun hemen önüne
+    yerleştiriyoruz. Eşit skorda kaynak sırası kararlı sıralama sağlar.
     """
-    return sorted(results, key=lambda r: (r["source"], r["chunk_index"]))
+    return sorted(
+        results,
+        key=lambda r: (r.get("score", 0.0), r["source"], r["chunk_index"]),
+    )

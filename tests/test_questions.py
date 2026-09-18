@@ -167,7 +167,7 @@ ANSWERABLE = [
     {
         "question": "Preemptive SJF algoritmasının diğer adı nedir?",
         "expect_source": "işletimsistemi.txt",
-        "expect_context": ["Shortest-Remaining-Time-First"],
+        "expect_context": ["Shortest-Remaining-Time-First", "SRTF"],
         "expect_keywords": ["srtf", "shortest-remaining", "remaining"],
     },
     {

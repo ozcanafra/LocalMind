@@ -6,6 +6,7 @@ geliyor ve cache'de hangi varyant varsa ona düşüyor.
 """
 
 import ctypes
+import os
 import time
 
 from foundry_local_sdk import Configuration, FoundryLocalManager
@@ -44,12 +45,17 @@ class _MemoryStatusEx(ctypes.Structure):
 
 
 def free_memory_gb():
-    """Boş fiziksel bellek (GB). Ölçemezse None döner."""
+    """Windows, macOS ve Linux'ta boş fiziksel belleği GB olarak döndürür."""
     try:
-        status = _MemoryStatusEx()
-        status.dwLength = ctypes.sizeof(_MemoryStatusEx)
-        ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(status))
-        return status.ullAvailPhys / 1024**3
+        if os.name == "nt":
+            status = _MemoryStatusEx()
+            status.dwLength = ctypes.sizeof(_MemoryStatusEx)
+            ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(status))
+            return status.ullAvailPhys / 1024**3
+
+        pages = os.sysconf("SC_AVPHYS_PAGES")
+        page_size = os.sysconf("SC_PAGE_SIZE")
+        return pages * page_size / 1024**3
     except Exception:
         return None
 
@@ -208,6 +214,10 @@ class EmbeddingModel:
 
     def generate_embeddings(self, texts):
         return self._call_with_retry("generate_embeddings", texts)
+
+    def warm_up(self):
+        """Modeli soru gelmeden yükle; ilk sorgudaki yükleme gecikmesini öne al."""
+        self._ensure_loaded()
 
     def release(self):
         """Modeli bellekten atar. Sonraki çağrıda otomatik geri yüklenir."""

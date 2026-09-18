@@ -20,106 +20,271 @@ st.set_page_config(
     page_title=f"{APP_NAME} — Yerel RAG Asistanı",
     page_icon="◆",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
+# ═══════════════════════════════════════════════════════════
+#  ORTAK CSS  (landing + chat ekranı için)
+# ═══════════════════════════════════════════════════════════
 CSS = """
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+
   :root {
     --acc:   #6366f1;
     --acc2:  #818cf8;
+    --acc3:  #a5b4fc;
     --adim:  rgba(99,102,241,.13);
-    --glow:  rgba(99,102,241,.25);
+    --glow:  rgba(99,102,241,.30);
     --line:  rgba(255,255,255,.07);
-    --line2: rgba(255,255,255,.11);
+    --line2: rgba(255,255,255,.12);
     --s1:    rgba(255,255,255,.025);
-    --s2:    rgba(255,255,255,.048);
-    --s3:    rgba(255,255,255,.08);
+    --s2:    rgba(255,255,255,.05);
+    --s3:    rgba(255,255,255,.09);
     --mu:    rgba(230,237,243,.42);
-    --mu2:   rgba(230,237,243,.65);
+    --mu2:   rgba(230,237,243,.68);
     --ok:    #34d399;
     --okd:   rgba(52,211,153,.13);
     --warn:  #fbbf24;
     --warnd: rgba(251,191,36,.11);
     --tx:    #e6edf3;
-    --r:     12px;
+    --bg:    #0b0e14;
+    --r:     14px;
     --rs:    9px;
   }
 
-  /* ─── Genel ─── */
-  .block-container {
-    padding-top: .5rem !important;
-    padding-bottom: 5.5rem;
-    max-width: 900px;
+  html, body, [data-testid="stAppViewContainer"] {
+    background: var(--bg) !important;
+    font-family: 'Inter', -apple-system, sans-serif !important;
   }
+
+  .block-container {
+    padding-top: 0 !important;
+    padding-bottom: 5rem;
+    max-width: 1000px;
+  }
+
   #MainMenu { visibility: hidden; }
   footer    { visibility: hidden; }
+  [data-testid="stToolbar"]     { visibility: hidden !important; }
+  [data-testid="stDecoration"]  { display: none !important; }
 
-  /* ─── Top header satırı ─── */
-  .lm-header {
+  /* Sidebar */
+  section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg,#0f1320 0%,#0b0e14 100%) !important;
+    border-right: 1px solid var(--line2) !important;
+  }
+
+  /* ═══════════════════════════════════
+     LANDING EKRANI
+  ═══════════════════════════════════ */
+  /* Giriş sayfasında boş kalan sabit Streamlit başlığını kaldır. */
+  body:has(.st-key-landing_page) [data-testid="stHeader"] {
+    display: none !important;
+  }
+  body:has(.st-key-landing_page) [data-testid="stAppViewContainer"] > .main {
+    padding-top: 0 !important;
+  }
+  .st-key-landing_page {
+    min-height: 100vh;
+    padding: 1.15rem 0 2.5rem;
+    position: relative;
+  }
+  .st-key-landing_page::before {
+    content: "";
+    position: fixed; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(circle at 8% 12%, rgba(99,102,241,.18), transparent 28%),
+      radial-gradient(circle at 92% 78%, rgba(34,211,238,.10), transparent 26%),
+      linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+    background-size: auto, auto, 48px 48px, 48px 48px;
+    mask-image: linear-gradient(to bottom, black 0%, transparent 92%);
+  }
+  .land-nav {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:.65rem .75rem; border:1px solid var(--line);
+    border-radius:15px;
+    background:rgba(14,18,28,.72);
+    box-shadow:0 12px 34px rgba(0,0,0,.16), inset 0 1px rgba(255,255,255,.035);
+    backdrop-filter:blur(14px);
+    margin-bottom:3.1rem; position:relative; z-index:1;
+  }
+  .land-brand { display:flex; align-items:center; gap:.7rem; }
+  .land-logo {
+    width:38px; height:38px; border-radius:11px;
+    display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg,#818cf8,#4f46e5);
+    color:#fff; font-size:1rem; font-weight:900;
+    box-shadow:0 8px 24px rgba(79,70,229,.35);
+  }
+  .land-brand-copy strong { display:block; color:var(--tx); font-size:.95rem; letter-spacing:-.02em; }
+  .land-brand-copy span { display:block; color:var(--mu); font-size:.67rem; margin-top:.05rem; }
+  .land-local {
+    display:inline-flex; align-items:center; gap:.42rem;
+    color:var(--mu2); font-size:.72rem; font-weight:600;
+    border:1px solid var(--line2); background:rgba(255,255,255,.035);
+    border-radius:999px; padding:.38rem .72rem;
+  }
+  .land-local i {
+    display:block; width:6px; height:6px; border-radius:50%;
+    background:var(--ok); box-shadow:0 0 9px var(--ok);
+  }
+  .land-kicker {
+    display:inline-flex; align-items:center; gap:.45rem;
+    color:var(--acc3); font-size:.72rem; font-weight:700;
+    text-transform:uppercase; letter-spacing:.12em;
+    margin-bottom:1.15rem;
+  }
+  .land-kicker::before { content:""; width:22px; height:1px; background:var(--acc2); }
+  .land-title {
+    color:var(--tx); font-size:clamp(2.7rem,5vw,4.8rem); font-weight:800;
+    line-height:1.02; letter-spacing:-.055em; max-width:650px;
+    margin:0 0 1.25rem;
+  }
+  .land-title span {
+    background:linear-gradient(120deg,#a5b4fc 10%,#67e8f9 90%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text;
+  }
+  .land-sub {
+    color:var(--mu2); font-size:1.03rem; line-height:1.75;
+    max-width:560px; margin-bottom:1.35rem;
+  }
+  .land-points { display:flex; flex-wrap:wrap; gap:.55rem 1.1rem; margin:0 0 1.3rem; }
+  .land-point { color:var(--mu2); font-size:.76rem; font-weight:550; }
+  .land-point b { color:var(--ok); margin-right:.3rem; }
+  .st-key-enter_chat button {
+    min-height:3.25rem !important; border:0 !important; border-radius:13px !important;
+    background:linear-gradient(135deg,#6d70f7,#4f46e5) !important;
+    color:#fff !important; font-size:.96rem !important; font-weight:700 !important;
+    box-shadow:0 12px 30px rgba(79,70,229,.32), inset 0 1px rgba(255,255,255,.18) !important;
+    transition:transform .18s ease, box-shadow .18s ease !important;
+  }
+  .st-key-enter_chat button:hover {
+    transform:translateY(-2px); box-shadow:0 16px 38px rgba(79,70,229,.45) !important;
+  }
+  .land-privacy { color:var(--mu); font-size:.68rem; margin-top:.65rem; }
+  .land-preview {
+    position:relative; padding:1rem; border-radius:24px;
+    border:1px solid rgba(165,180,252,.18);
+    background:linear-gradient(145deg,rgba(255,255,255,.07),rgba(255,255,255,.025));
+    box-shadow:0 28px 80px rgba(0,0,0,.35), inset 0 1px rgba(255,255,255,.07);
+    backdrop-filter:blur(18px); transform:rotate(1.2deg);
+  }
+  .land-preview::before {
+    content:""; position:absolute; inset:-1px; border-radius:24px; pointer-events:none;
+    background:linear-gradient(135deg,rgba(129,140,248,.22),transparent 42%);
+    mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+    mask-composite:exclude; padding:1px;
+  }
+  .preview-head { display:flex; align-items:center; justify-content:space-between; padding:.25rem .2rem .9rem; }
+  .preview-title { color:var(--tx); font-size:.78rem; font-weight:700; }
+  .preview-status { color:var(--ok); font-size:.62rem; font-weight:650; }
+  .preview-status::before { content:"●"; margin-right:.3rem; }
+  .preview-body { border-radius:17px; background:rgba(5,8,15,.62); padding:1rem; min-height:330px; }
+  .preview-user {
+    width:78%; margin-left:auto; border-radius:15px 15px 4px 15px;
+    background:linear-gradient(135deg,#5f63e9,#4540c5); color:#fff;
+    padding:.75rem .9rem; font-size:.75rem; line-height:1.5;
+  }
+  .preview-ai { display:flex; gap:.55rem; margin-top:1rem; align-items:flex-start; }
+  .preview-avatar {
+    flex:none; width:26px; height:26px; border-radius:8px; display:flex;
+    align-items:center; justify-content:center; background:var(--adim); color:var(--acc3);
+    border:1px solid rgba(129,140,248,.22); font-size:.65rem;
+  }
+  .preview-answer {
+    color:var(--mu2); border:1px solid var(--line); background:var(--s2);
+    border-radius:4px 14px 14px 14px; padding:.75rem .85rem;
+    font-size:.72rem; line-height:1.65;
+  }
+  .preview-answer strong { color:var(--tx); }
+  .preview-source {
+    display:flex; align-items:center; justify-content:space-between; margin-top:.75rem;
+    border-top:1px solid var(--line); padding-top:.55rem; color:var(--mu); font-size:.61rem;
+  }
+  .preview-source b { color:var(--ok); font-weight:650; }
+  .land-stats {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:.6rem;
+    margin-top:1.35rem;
+  }
+  .land-stat {
+    border:1px solid var(--line); background:rgba(255,255,255,.025);
+    border-radius:12px; padding:.8rem .7rem;
+  }
+  .land-stat-n { color:var(--tx); font-size:1.15rem; font-weight:750; letter-spacing:-.03em; }
+  .land-stat-l { color:var(--mu); font-size:.62rem; margin-top:.14rem; }
+  .land-foot {
+    text-align:center; color:var(--mu); font-size:.64rem;
+    margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line);
+  }
+  @media (max-width: 760px) {
+    .st-key-landing_page { padding-top:.65rem; }
+    .land-nav { margin-bottom:2.2rem; }
+    .land-title { font-size:2.65rem; }
+    .land-preview { margin-top:1.6rem; transform:none; }
+    .land-local { display:none; }
+  }
+
+  /* ═══════════════════════════════════
+     CHAT EKRANI
+  ═══════════════════════════════════ */
+
+  /* Üst bar */
+  .chat-topbar {
     display: flex; align-items: center;
     justify-content: space-between;
-    padding: .5rem 0 .7rem;
+    padding: .55rem 0 .65rem;
     border-bottom: 1px solid var(--line2);
-    margin-bottom: 1rem;
+    margin-bottom: 1.2rem;
   }
-  .lm-header-left {
-    display: flex; flex-wrap: wrap; align-items: center; gap: .35rem;
-  }
-  .lm-header-right {
+  .chat-brand {
     display: flex; align-items: center; gap: .5rem;
-    flex-shrink: 0;
   }
-  .lm-brand {
-    display: flex; align-items: center; gap: .45rem;
-    background: var(--s2);
-    border: 1px solid var(--line2);
-    border-radius: 99px;
-    padding: .28rem .7rem .28rem .35rem;
-    box-shadow: 0 2px 12px rgba(0,0,0,.25), 0 0 0 1px rgba(99,102,241,.08);
-  }
-  .lm-brand-mark {
-    width: 22px; height: 22px; border-radius: 6px;
+  .chat-brand-mark {
+    width: 28px; height: 28px; border-radius: 8px;
     background: linear-gradient(135deg, var(--acc), #4338ca);
     display: flex; align-items: center; justify-content: center;
-    font-size: .65rem; font-weight: 800; color: #fff;
-    box-shadow: 0 1px 6px var(--glow);
+    font-size: .72rem; font-weight: 800; color: #fff;
+    box-shadow: 0 2px 10px var(--glow);
   }
-  .lm-brand-name {
-    font-size: .8rem; font-weight: 700;
+  .chat-brand-name {
+    font-size: .9rem; font-weight: 700;
     color: var(--tx); letter-spacing: -.01em;
   }
-  .lm-brand-ver {
-    font-size: .64rem; color: var(--mu); margin-left: .1rem;
+  .chat-brand-ver {
+    font-size: .65rem; color: var(--mu); margin-left: .1rem;
   }
-
-  /* Rozetler */
-  .lm-badge {
-    display: inline-flex; align-items: center; gap: .28rem;
-    font-size: .7rem; font-weight: 500;
-    padding: .2rem .58rem; border-radius: 99px;
+  .chat-badges {
+    display: flex; flex-wrap: wrap; align-items: center; gap: .3rem;
+  }
+  .cb {
+    display: inline-flex; align-items: center; gap: .25rem;
+    font-size: .68rem; font-weight: 500;
+    padding: .18rem .52rem; border-radius: 99px;
     border: 1px solid var(--line2);
     background: var(--s2); color: var(--mu2);
     white-space: nowrap;
   }
-  .lm-badge.live {
+  .cb.live {
     border-color: rgba(52,211,153,.32);
     background: var(--okd); color: var(--ok);
   }
-  .lm-badge.live::before {
+  .cb.live::before {
     content: "";
     width: 5px; height: 5px; border-radius: 50%;
     background: var(--ok); box-shadow: 0 0 5px var(--ok);
     display: inline-block;
-    animation: lm-pulse 2s ease-in-out infinite;
+    animation: pulse 2s ease-in-out infinite;
   }
-  .lm-badge.model {
+  .cb.model {
     border-color: rgba(99,102,241,.35);
     background: var(--adim); color: var(--acc2);
   }
-  @keyframes lm-pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-  /* ─── Chat baloncukları ─── */
+  /* Sohbet baloncukları */
   .lm-msg-user {
     display: flex; justify-content: flex-end; margin: 0 0 .9rem;
   }
@@ -127,15 +292,13 @@ CSS = """
     max-width: 72%;
     background: linear-gradient(135deg, #5a5eed, #3f3dca);
     color: #fff; border-radius: 20px 20px 5px 20px;
-    padding: .72rem 1.05rem;
+    padding: .75rem 1.1rem;
     font-size: .93rem; line-height: 1.65;
     box-shadow: 0 3px 16px rgba(99,102,241,.28);
     word-break: break-word;
   }
-
   .lm-msg-ai {
-    display: flex; gap: .6rem;
-    margin: 0 0 1rem; align-items: flex-start;
+    display: flex; gap: .6rem; margin: 0 0 1rem; align-items: flex-start;
   }
   .lm-ava {
     flex: none; width: 28px; height: 28px; border-radius: 8px;
@@ -146,8 +309,7 @@ CSS = """
   }
   .lm-ai-body { flex: 1; min-width: 0; }
   .lm-ai-card {
-    background: var(--s2);
-    border: 1px solid var(--line2);
+    background: var(--s2); border: 1px solid var(--line2);
     border-radius: 5px 18px 18px 18px;
     padding: .8rem 1rem;
     box-shadow: 0 2px 10px rgba(0,0,0,.12);
@@ -187,26 +349,26 @@ CSS = """
 
   /* Boş ekran */
   .lm-empty {
-    max-width:400px; margin:4rem auto 0; text-align:center;
-    border:1px dashed rgba(99,102,241,.25); border-radius:18px;
-    padding:2.8rem 1.6rem;
-    background:radial-gradient(ellipse at 50% 0%,rgba(99,102,241,.055) 0%,transparent 65%);
+    max-width:400px; margin:3rem auto 0; text-align:center;
+    border:1px dashed rgba(99,102,241,.22); border-radius:18px;
+    padding:2.5rem 1.6rem;
+    background:radial-gradient(ellipse at 50% 0%,rgba(99,102,241,.05) 0%,transparent 65%);
   }
-  .lm-empty-ico { font-size:2rem; display:block; margin-bottom:.85rem; }
-  .lm-empty-t { font-size:1rem; font-weight:650; color:var(--tx); margin-bottom:.45rem; letter-spacing:-.01em; }
-  .lm-empty-b { font-size:.82rem; color:var(--mu); line-height:1.65; }
+  .lm-empty-ico { font-size:1.8rem; display:block; margin-bottom:.8rem; }
+  .lm-empty-t { font-size:.98rem; font-weight:650; color:var(--tx); margin-bottom:.42rem; }
+  .lm-empty-b { font-size:.81rem; color:var(--mu); line-height:1.65; }
 
-  /* ─── Kaynak kartları ─── */
+  /* Kaynak kartları */
   .src-lbl {
-    font-size:.64rem; font-weight:700; letter-spacing:.09em;
-    text-transform:uppercase; color:var(--mu); margin-bottom:.45rem;
+    font-size:.63rem; font-weight:700; letter-spacing:.09em;
+    text-transform:uppercase; color:var(--mu); margin-bottom:.42rem;
   }
   .src-card {
     border:1px solid var(--line); border-radius:var(--rs);
-    padding:.58rem .75rem; margin-bottom:.32rem; background:var(--s1);
+    padding:.58rem .75rem; margin-bottom:.3rem; background:var(--s1);
   }
   .src-card.used { border-color:rgba(52,211,153,.22); background:rgba(52,211,153,.03); }
-  .src-r1 { display:flex; justify-content:space-between; align-items:center; gap:.5rem; margin-bottom:.26rem; }
+  .src-r1 { display:flex; justify-content:space-between; align-items:center; gap:.5rem; margin-bottom:.25rem; }
   .src-left { display:flex; align-items:center; gap:.42rem; min-width:0; }
   .src-rank {
     flex:none; width:16px; height:16px; border-radius:4px;
@@ -224,19 +386,15 @@ CSS = """
   .src-score.hi  { color:var(--ok);   }
   .src-score.mid { color:var(--warn); }
   .src-score.lo  { color:var(--mu);   }
-  .src-head { font-size:.7rem; color:var(--mu); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:.28rem; }
+  .src-head { font-size:.7rem; color:var(--mu); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:.26rem; }
   .src-bar  { height:3px; border-radius:99px; background:rgba(255,255,255,.05); overflow:hidden; }
   .src-bar > i { display:block; height:100%; border-radius:99px; }
   .src-bar.hi  > i { background:linear-gradient(90deg,#34d399,#10b981); }
   .src-bar.mid > i { background:linear-gradient(90deg,#fbbf24,#f59e0b); }
   .src-bar.lo  > i { background:rgba(255,255,255,.14); }
-  .src-sub { display:flex; gap:.7rem; margin-top:.25rem; font-size:.65rem; color:var(--mu); font-family:ui-monospace,"SF Mono",Menlo,monospace; }
+  .src-sub { display:flex; gap:.7rem; margin-top:.24rem; font-size:.65rem; color:var(--mu); font-family:ui-monospace,"SF Mono",Menlo,monospace; }
 
-  /* ─── Sidebar ─── */
-  section[data-testid="stSidebar"] {
-    background:linear-gradient(180deg,#0f1320 0%,#0b0e14 100%) !important;
-    border-right:1px solid var(--line2) !important;
-  }
+  /* Sidebar */
   .sb-top {
     display:flex; align-items:center; gap:.58rem;
     padding:.85rem 0 .8rem; border-bottom:1px solid var(--line); margin-bottom:.9rem;
@@ -293,7 +451,9 @@ CSS = """
 st.markdown(CSS, unsafe_allow_html=True)
 
 
-# ── Yardımcı fonksiyonlar ────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════
+#  CACHE
+# ═══════════════════════════════════════════════════════════
 
 @st.cache_resource(show_spinner=False)
 def load_pipeline(fast: bool):
@@ -310,6 +470,10 @@ def db_stats():
     conn.close()
     return total, rows
 
+
+# ═══════════════════════════════════════════════════════════
+#  YARDIMCI FONKSİYONLAR
+# ═══════════════════════════════════════════════════════════
 
 def score_cls(s: float) -> str:
     if s >= config.SIMILARITY_THRESHOLD:         return "hi"
@@ -341,12 +505,11 @@ def source_card(rank: int, s) -> str:
 
 
 def render_sources(sources, container):
-    used  = [s for s in sources if s.get("used_in_prompt")]
-    other = [s for s in sources if not s.get("used_in_prompt")]
+    used = [s for s in sources if s.get("used_in_prompt")]
     with container:
         if used:
             st.markdown(
-                '<div class="src-lbl">Modele gönderilen</div>'
+                '<div class="src-lbl">Modele gönderilen kaynaklar</div>'
                 + "".join(source_card(i, s) for i, s in enumerate(used, 1)),
                 unsafe_allow_html=True,
             )
@@ -403,7 +566,21 @@ def thinking(label: str) -> str:
     )
 
 
-# ── Sidebar ──────────────────────────────────────────────────────────────
+def render_history(history, show_sources):
+    for entry in history:
+        st.markdown(msg_user(entry["question"]), unsafe_allow_html=True)
+        st.markdown(
+            msg_ai(entry["answer"], entry.get("found", True), footer_html(entry)),
+            unsafe_allow_html=True,
+        )
+        if show_sources and entry.get("sources") and entry.get("found", True):
+            with st.expander("Kaynaklar", expanded=False):
+                render_sources(entry["sources"], st.container())
+
+
+# ═══════════════════════════════════════════════════════════
+#  SIDEBAR
+# ═══════════════════════════════════════════════════════════
 
 def sidebar_ui(total, per_source):
     with st.sidebar:
@@ -412,7 +589,7 @@ def sidebar_ui(total, per_source):
             '  <div class="sb-mark">◆</div>'
             '  <div>'
             f'    <div class="sb-name">{APP_NAME}</div>'
-            f'    <div class="sb-ver">{APP_VERSION} · Çevrim dışı</div>'
+            f'    <div class="sb-ver">{APP_VERSION} · Çevrim Dışı</div>'
             '  </div>'
             '</div>',
             unsafe_allow_html=True,
@@ -420,16 +597,17 @@ def sidebar_ui(total, per_source):
 
         st.markdown('<div class="sb-sec">Model</div>', unsafe_allow_html=True)
         quality = st.toggle(
-            "Yüksek doğruluk",
+            "Açıklamalı LLM yanıtı",
             value=False,
-            help="Açık: phi-3.5-mini (3.8 B) — ~76 sn/soru\nKapalı: qwen2.5-1.5b — ~15-35 sn/soru",
+            help=("Açık: yerel LLM ile açıklamalı yanıt — daha yavaş\n"
+                  "Kapalı: kaynaktaki en güçlü kanıt — hedef 1-3 sn"),
         )
         q_on = "" if quality else "on"
         p_on = "on" if quality else ""
         st.markdown(
             f'<div class="sb-mc {q_on}">'
-            f'  <div class="sb-mc-n">qwen2.5-1.5b</div>'
-            f'  <div class="sb-mc-d">1.5 B · düşük RAM kullanımı</div>'
+            f'  <div class="sb-mc-n">Hızlı kaynak modu</div>'
+            f'  <div class="sb-mc-d">LLM yok · doğrudan kanıt</div>'
             f'  <span class="sb-mc-t fast">⚡ ~15-35 sn/soru</span>'
             f'</div>'
             f'<div class="sb-mc {p_on}">'
@@ -462,7 +640,6 @@ def sidebar_ui(total, per_source):
             ("Hibrit ağırlık",  f"v {config.HYBRID_ALPHA} / k {round(1-config.HYBRID_ALPHA,2)}"),
             ("Bağlam bütçesi",  f"{config.MAX_CONTEXT_CHARS} krk"),
             ("Aday sayısı",     str(config.TOP_K)),
-            ("Parça boyutu",    f"{config.CHUNK_SIZE} kelime"),
         ]
         st.markdown(
             "".join(
@@ -478,52 +655,155 @@ def sidebar_ui(total, per_source):
             st.session_state.history = []
             st.rerun()
 
+        st.markdown("<div style='height:.4rem'></div>", unsafe_allow_html=True)
+        if st.button("← Giriş ekranı", use_container_width=True):
+            st.session_state.page = "landing"
+            st.session_state.history = []
+            st.rerun()
+
     return quality, show_sources
 
 
-# ── Geçmiş ──────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════
+#  LANDING EKRANI
+# ═══════════════════════════════════════════════════════════
 
-def render_history(history, show_sources):
-    for entry in history:
-        st.markdown(msg_user(entry["question"]), unsafe_allow_html=True)
+def page_landing(total, per_source):
+    """Karşılama ekranı — ana eylem görünür ve tek tıkla sohbete geçer."""
+    doc_count = len(per_source)
+
+    with st.container(key="landing_page"):
         st.markdown(
-            msg_ai(entry["answer"], entry.get("found", True), footer_html(entry)),
+            f"""
+            <div class="land-nav">
+              <div class="land-brand">
+                <div class="land-logo">◆</div>
+                <div class="land-brand-copy">
+                  <strong>{APP_NAME}</strong>
+                  <span>Yerel bilgi asistanı</span>
+                </div>
+              </div>
+              <div class="land-local"><i></i> Sistem çevrim dışı çalışıyor</div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
-        if show_sources and entry.get("sources") and entry.get("found", True):
-            with st.expander("Kaynaklar", expanded=False):
-                render_sources(entry["sources"], st.container())
+
+        hero, preview = st.columns([1.12, .88], gap="large", vertical_alignment="center")
+
+        with hero:
+            st.markdown(
+                """
+                <div class="land-kicker">Notlarından doğru cevaba</div>
+                <div class="land-title">Bilgin sende kalsın.<br><span>Cevabın saniyeler içinde gelsin.</span></div>
+                <div class="land-sub">
+                  Ders notlarını güvenli biçimde tarayan LocalMind, ilgili bölümleri bulur
+                  ve yanıtını kaynaklarıyla birlikte üretir. İnternet gerekmez; verilerin
+                  cihazından çıkmaz.
+                </div>
+                <div class="land-points">
+                  <span class="land-point"><b>✓</b> Kaynaklı yanıtlar</span>
+                  <span class="land-point"><b>✓</b> Yerel yapay zekâ</span>
+                  <span class="land-point"><b>✓</b> Hibrit arama</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            if st.button(
+                "Sohbete başla  →",
+                key="enter_chat",
+                type="primary",
+                use_container_width=True,
+            ):
+                st.session_state.page = "chat"
+                st.rerun()
+
+            st.markdown(
+                '<div class="land-privacy">🔒 Soruların ve belgelerin yalnızca bu cihazda işlenir.</div>',
+                unsafe_allow_html=True,
+            )
+
+        with preview:
+            st.markdown(
+                f"""
+                <div class="land-preview">
+                  <div class="preview-head">
+                    <span class="preview-title">Canlı yanıt önizlemesi</span>
+                    <span class="preview-status">Bilgi tabanı hazır</span>
+                  </div>
+                  <div class="preview-body">
+                    <div class="preview-user">Second-chance algoritmasının diğer adı nedir?</div>
+                    <div class="preview-ai">
+                      <div class="preview-avatar">◆</div>
+                      <div class="preview-answer">
+                        Second-chance algoritması, <strong>Clock (saat) algoritması</strong>
+                        olarak da bilinir. Sayfalar dairesel bir listede tutulur ve referans
+                        bitine göre ikinci bir şans verilir.
+                        <div class="preview-source">
+                          <span>işletimsistemi.txt</span><b>✓ Kaynak kullanıldı</b>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="land-stats">
+                      <div class="land-stat">
+                        <div class="land-stat-n">{total}</div>
+                        <div class="land-stat-l">İndeksli parça</div>
+                      </div>
+                      <div class="land-stat">
+                        <div class="land-stat-n">{doc_count}</div>
+                        <div class="land-stat-l">Kaynak belge</div>
+                      </div>
+                      <div class="land-stat">
+                        <div class="land-stat-n">%100</div>
+                        <div class="land-stat-l">Yerel çalışma</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        st.markdown(
+            f'<div class="land-foot">{APP_NAME} {APP_VERSION} · Microsoft Foundry Local ile çalışır</div>',
+            unsafe_allow_html=True,
+        )
 
 
-# ── Ana akış ────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════
+#  CHAT EKRANI
+# ═══════════════════════════════════════════════════════════
 
-def main():
-    total, per_source = db_stats()
+def page_chat(total, per_source):
+    """Sohbet ekranı."""
     quality, show_sources = sidebar_ui(total, per_source)
-    model_lbl = "phi-3.5-mini" if quality else "qwen2.5-1.5b"
+    model_lbl = "phi-3.5-mini" if quality else "Hızlı kaynak"
 
-    # ── Header satırı: sol = rozetler, sağ = marka ──
+    # ── Üst bar ──
     left_col, right_col = st.columns([5, 1])
 
     with left_col:
         st.markdown(
-            f'<div class="lm-header-left" style="display:flex;flex-wrap:wrap;gap:.35rem;padding-top:.4rem;padding-bottom:.55rem;border-bottom:1px solid var(--line2);margin-bottom:1rem">'
-            f'  <span class="lm-badge live"><b>{total}</b>&thinsp;parça</span>'
-            f'  <span class="lm-badge"><b>{len(per_source)}</b>&thinsp;belge</span>'
-            f'  <span class="lm-badge model">{model_lbl}</span>'
-            f'  <span class="lm-badge">🔒 Çevrim dışı</span>'
-            f'  <span class="lm-badge">🛡 Uydurma korumalı</span>'
+            f'<div class="chat-topbar">'
+            f'  <div class="chat-badges">'
+            f'    <span class="cb live"><b>{total}</b>&thinsp;parça</span>'
+            f'    <span class="cb"><b>{len(per_source)}</b>&thinsp;belge</span>'
+            f'    <span class="cb model">{model_lbl}</span>'
+            f'    <span class="cb">🔒 Çevrim dışı</span>'
+            f'    <span class="cb">🛡 Uydurma korumalı</span>'
+            f'  </div>'
             f'</div>',
             unsafe_allow_html=True,
         )
 
     with right_col:
         st.markdown(
-            '<div style="display:flex;justify-content:flex-end;padding-top:.25rem;padding-bottom:.55rem;border-bottom:1px solid var(--line2);margin-bottom:1rem">'
-            '  <div class="lm-brand">'
-            '    <div class="lm-brand-mark">◆</div>'
-            f'   <span class="lm-brand-name">{APP_NAME}</span>'
-            f'   <span class="lm-brand-ver">{APP_VERSION}</span>'
+            '<div class="chat-topbar" style="justify-content:flex-end">'
+            '  <div class="chat-brand">'
+            '    <div class="chat-brand-mark">◆</div>'
+            f'   <span class="chat-brand-name">{APP_NAME}</span>'
+            f'   <span class="chat-brand-ver">{APP_VERSION}</span>'
             '  </div>'
             '</div>',
             unsafe_allow_html=True,
@@ -607,6 +887,22 @@ def main():
         unsafe_allow_html=True,
     )
     st.session_state.history.append(entry)
+
+
+# ═══════════════════════════════════════════════════════════
+#  ROUTER
+# ═══════════════════════════════════════════════════════════
+
+def main():
+    if "page" not in st.session_state:
+        st.session_state.page = "landing"
+
+    total, per_source = db_stats()
+
+    if st.session_state.page == "landing":
+        page_landing(total, per_source)
+    else:
+        page_chat(total, per_source)
 
 
 if __name__ == "__main__":
